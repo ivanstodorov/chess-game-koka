@@ -1,5 +1,6 @@
 module game/figure/figure
 
+pub import game/figure/location/location
 pub import game/player/player
 
 pub type figure-type
@@ -11,12 +12,12 @@ pub type figure-type
   King
 
 pub struct figure
-  figure-type : figure-type
-  player      : player
-  location    : (int, int)
+  figure-type     : figure-type
+  figure-player   : player
+  figure-location : location
 
-pub fun show(figure : figure) : string
-  match figure
+pub fun show(x : figure) : string
+  match x
     Figure(Pawn,   White, _) -> "P"
     Figure(Pawn,   Black, _) -> "p"
     Figure(Knight, White, _) -> "N"
