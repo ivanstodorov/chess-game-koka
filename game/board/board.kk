@@ -6,20 +6,20 @@ val board-rows = 8
 val board-columns = 8
 
 pub struct board
-  figures : list<figure> = [Figure(Pawn, White, (6, 0)), Figure(Pawn, White, (6, 1)), Figure(Pawn, White, (6, 2)), Figure(Pawn, White, (6, 3)),
-                            Figure(Pawn, White, (6, 4)), Figure(Pawn, White, (6, 5)), Figure(Pawn, White, (6, 6)), Figure(Pawn, White, (6, 7)),
+  figures : list<figure> = [Figure(Pawn(), White, (6, 0)), Figure(Pawn(), White, (6, 1)), Figure(Pawn(), White, (6, 2)), Figure(Pawn(), White, (6, 3)),
+                            Figure(Pawn(), White, (6, 4)), Figure(Pawn(), White, (6, 5)), Figure(Pawn(), White, (6, 6)), Figure(Pawn(), White, (6, 7)),
                             Figure(Knight, White, (7, 1)), Figure(Knight, White, (7, 6)),
                             Figure(Bishop, White, (7, 2)), Figure(Bishop, White, (7, 5)),
-                            Figure(Rook, White, (7, 0)), Figure(Rook, White, (7, 7)),
+                            Figure(Rook(queenside-castling=True), White, (7, 0)), Figure(Rook(kingside-castling=True), White, (7, 7)),
                             Figure(Queen, White, (7, 3)),
-                            Figure(King, White, (7, 4)),
-                            Figure(Pawn, Black, (1, 0)), Figure(Pawn, Black, (1, 1)), Figure(Pawn, Black, (1, 2)), Figure(Pawn, Black, (1, 3)),
-                            Figure(Pawn, Black, (1, 4)), Figure(Pawn, Black, (1, 5)), Figure(Pawn, Black, (1, 6)), Figure(Pawn, Black, (1, 7)),
+                            Figure(King(), White, (7, 4)),
+                            Figure(Pawn(), Black, (1, 0)), Figure(Pawn(), Black, (1, 1)), Figure(Pawn(), Black, (1, 2)), Figure(Pawn(), Black, (1, 3)),
+                            Figure(Pawn(), Black, (1, 4)), Figure(Pawn(), Black, (1, 5)), Figure(Pawn(), Black, (1, 6)), Figure(Pawn(), Black, (1, 7)),
                             Figure(Knight, Black, (0, 1)), Figure(Knight, Black, (0, 6)),
                             Figure(Bishop, Black, (0, 2)), Figure(Bishop, Black, (0, 5)),
-                            Figure(Rook, Black, (0, 0)), Figure(Rook, Black, (0, 7)),
+                            Figure(Rook(queenside-castling=True), Black, (0, 0)), Figure(Rook(kingside-castling=True), Black, (0, 7)),
                             Figure(Queen, Black, (0, 3)),
-                            Figure(King, Black, (0, 4)),]
+                            Figure(King(), Black, (0, 4)),]
 
 pub fun find-figure(current-board : board, target-location : location, current-player : maybe<player> = Nothing) : maybe<figure>
   fun helper(xs : list<figure>) : maybe<figure>
@@ -40,7 +40,7 @@ pub fun show(x : board) : string
   fun show-row(row-index : int) : string
     fun show-location(column-index : int) : string
       match find-figure(x, (row-index, column-index))
-        Just(x) -> x.show
+        Just(y) -> y.show
         _       -> " "
 
     var result := " " ++ (board-rows - row-index).show ++ " ||"
