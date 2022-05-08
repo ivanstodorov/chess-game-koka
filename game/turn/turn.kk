@@ -8,29 +8,37 @@ val synonyms-for-draw = ["stalemate", "draw", "tie"]
 val synonyms-for-surrender = ["good game", "gg", "forfait", "ff"]
 
 type action
-  Move(from : location, to : location)
+  Move(selected-figure : figure, to : location)
   KingsideCastling
   QueensideCastling
   DrawOffer
   Surrender
 
-pub effect fun perform-turn(current-action : action, current-board : board, current-player : player) : either<player, maybe<player>>
+pub effect board-state
+  fun get-board() : board
+  fun perform-turn(current-action : action, current-player : player) : either<player, maybe<player>>
 
-pub fun handle-perform-turn(action : () -> <perform-turn | e> a) : e a
-  with fun perform-turn(current-action, current-board, current-player)
-    match current-action
-      // Move(from-location, to-location) ->
-      // KingsideCastling                 ->
-      // QueensideCastling                ->
-      // DrawOffer                        ->
-      Surrender                        -> Right(Just(current-player.opponent))
-      _                                -> Left(opponent(current-player)) // REMOVE when all of the above are done
+pub fun handle-board-state(initial-state : board, action : () -> <board-state | e> a) : e a
+  var current-board-state := initial-state
+
+  with handler
+    fun get-board() current-board-state
+
+    fun perform-turn(current-action, current-player)
+      match current-action
+        Move(Figure(x, y, z), to-location) ->
+          current-board-state := Board(Cons(Figure(x, y, to-location), current-board-state.figures.remove(fn(current) current.figure-location == z || current.figure-location == to-location)))
+          Left(current-player.opponent) // TODO (Checkmate?)
+        KingsideCastling                   -> Left(current-player.opponent) // TODO
+        QueensideCastling                  -> Left(current-player.opponent) // TODO
+        DrawOffer                          -> Left(current-player.opponent) // TODO
+        Surrender                          -> Right(Just(current-player.opponent))
 
   action()
 
-pub effect fun read-input-turn() : maybe<action>
+pub effect fun read-input-turn(current-player : player) : maybe<action>
 
-pub fun handle-read-input-turn(action : () -> <console, exn, read-input-turn | e> a) : <console, exn | e> a
+pub fun handle-read-input-turn(action : () -> <console, exn, board-state, read-input-turn | e> a) : <console, exn, board-state | e> a
   fun parse-row(row : char) : maybe<int>
     match row
       '1' -> Just(7)
@@ -55,7 +63,7 @@ pub fun handle-read-input-turn(action : () -> <console, exn, read-input-turn | e
       'h' -> Just(7)
       _   -> Nothing
 
-  with fun read-input-turn()
+  with fun read-input-turn(current-player)
     val temp = readline()
 
     if is-empty(temp) then return Nothing
@@ -70,38 +78,43 @@ pub fun handle-read-input-turn(action : () -> <console, exn, read-input-turn | e
     match list(input)
       Cons(m, Cons(n, Cons(o, Cons(p, Nil)))) ->
         match ((parse-row(n), parse-column(m)), (parse-row(p), parse-column(o)))
-          ((Just(q), Just(r)), (Just(s), Just(t))) -> Just(Move((q, r), (s, t)))
+          ((Just(q), Just(r)), (Just(s), Just(t))) -> 
+            match find-figure(get-board(), (q, r), Just(current-player))
+              Just(x) -> Just(Move(x, (s, t)))
+              Nothing -> Nothing
           _                                        -> Nothing
       _                                       -> Nothing
 
   action()
 
-fun validate-input-turn(current-action : action, current-board : board, current-player : player) : bool
+fun validate-input-turn(current-action : action, current-player : player) : board-state bool
   match current-action
-    Move(from-location, _to-location) ->
-      match find-figure(current-board, from-location, Just(current-player))
-        Just(_) -> True // Validate the move separately for different possible figures
+    Move(x, to-location) ->
+      match valid-moves(x, get-board()).find(fn(current) current == to-location)
+        Just(_) -> True // TODO (Is the king in check?)
         Nothing -> False
-    KingsideCastling                  -> False
-    QueensideCastling                 -> False
+    KingsideCastling                  -> False // TODO
+    QueensideCastling                 -> False // TODO
     _                                 -> True
 
-fun input-turn(current-board : board, current-player : player, invalid-input-warning : string) : <div, console, read-input-turn> action
+fun input-turn(current-player : player, invalid-input-warning : string) : <div, console, read-input-turn, board-state> action
+  fun handle-invalid-input() : <div, console, read-input-turn, board-state> action
+    println("\n" ++ invalid-input-warning ++ "\n")
+    input-turn(current-player, invalid-input-warning)
+
   print(current-player.show ++ "'s turn: ")
 
-  match read-input-turn()
-    Just(x) | validate-input-turn(x, current-board, current-player) -> x
-    _                                                               ->
-      println("\n" ++ invalid-input-warning ++ "\n")
-      input-turn(current-board, current-player, invalid-input-warning)
+  match read-input-turn(current-player)
+    Just(x) -> if validate-input-turn(x, current-player) then x else handle-invalid-input()
+    _       -> handle-invalid-input()
 
-pub fun turn(current-board : board, current-player : player) : <div, console, perform-turn, read-input-turn> maybe<player>
-  println(current-board.show)
+pub fun turn(current-player : player) : <div, console, board-state, read-input-turn> maybe<player>
+  println(get-board().show)
   println("")
   
-  val current-action = input-turn(current-board, current-player, "Invalid input!")
+  val current-action = input-turn(current-player, "Invalid input!")
   println("")
 
-  match perform-turn(current-action, current-board, current-player)
-    Left(x)  -> turn(current-board, x)
+  match perform-turn(current-action, current-player)
+    Left(x)  -> turn(x)
     Right(x) -> x

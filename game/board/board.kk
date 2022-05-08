@@ -66,3 +66,23 @@ pub fun show(x : board) : string
   result := result ++ "===++===+===+===+===+===+===+===+===++---\n"
   result := result ++ "   || A | B | C | D | E | F | G | H ||   "
   result
+
+pub fun valid-moves(current-figure : figure, current-board : board) : list<location>
+  fun validate-location(x : location) : bool
+    0 <= x.fst && x.fst < board-rows && 0 <= x.snd && x.snd < board-columns && is-nothing(find-figure(current-board, x, Just(current-figure.figure-player)))
+
+  match current-figure
+    Figure(Pawn(_has-moved, _en-passant),                 _current-player, _current-location) -> Nil // TODO
+    Figure(Knight,                                        _,                current-location) ->
+      filter([(current-location.fst - 2, current-location.snd - 1),
+              (current-location.fst - 2, current-location.snd + 1),
+              (current-location.fst + 2, current-location.snd - 1),
+              (current-location.fst + 2, current-location.snd + 1),
+              (current-location.fst - 1, current-location.snd - 2),
+              (current-location.fst - 1, current-location.snd + 2),
+              (current-location.fst + 1, current-location.snd - 2),
+              (current-location.fst + 1, current-location.snd + 2)], validate-location)
+    Figure(Bishop,                                        _current-player, _current-location) -> Nil // TODO
+    Figure(Rook(_kingside_castling, _queenside_castling), _current-player, _current-location) -> Nil // TODO
+    Figure(Queen,                                         _current-player, _current-location) -> Nil // TODO
+    Figure(King,                                          _current-player, _current-location) -> Nil // TODO

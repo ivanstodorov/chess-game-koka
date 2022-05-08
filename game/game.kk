@@ -23,6 +23,6 @@ pub fun game() : <div, console, exn> maybe<player>
   // println("===++===+===+===+===+===+===+===+===++---")
   // println("   || A | B | C | D | E | F | G | H ||   ")
 
+  with handle-board-state(Board())
   with handle-read-input-turn
-  with handle-perform-turn
-  turn(Board(), White)
+  turn(White)
