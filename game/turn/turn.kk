@@ -4,8 +4,10 @@ pub import game/board/board
 
 import std/os/readline
 
-val synonyms-for-draw = ["stalemate", "draw", "tie"]
 val synonyms-for-surrender = ["good game", "gg", "forfait", "ff"]
+val synonyms-for-draw = ["remis", "draw", "tie"]
+val synonyms-for-accept = ["accept", "yes", "y"]
+val synonyms-for-reject = ["reject", "no", "n"]
 
 type action
   Move(selected-figure : figure, to : location)
@@ -13,6 +15,33 @@ type action
   QueensideCastling
   DrawOffer
   Surrender
+
+pub effect fun read-input-draw-offer() : maybe<bool>
+
+pub fun handle-read-input-draw-offer(action : () -> <console, exn, read-input-draw-offer | e> a) : <console, exn | e> a
+  with fun read-input-draw-offer()
+    val temp = readline()
+
+    if is-empty(temp) then return Nothing
+
+    val input = temp.to-lower
+
+    if is-just(synonyms-for-accept.find(fn(current) current == input)) then return Just(True)
+    if is-just(synonyms-for-reject.find(fn(current) current == input)) then return Just(False)
+
+    Nothing
+
+  action()
+
+fun input-draw-offer(current-player : player, invalid-input-warning : string) : <div, console, read-input-draw-offer> bool
+  println(current-player.show ++ " offered a draw.")
+  print(current-player.opponent.show ++ "'s response: ")
+
+  match read-input-draw-offer()
+    Just(x) -> x
+    _       ->
+      println("\n" ++ invalid-input-warning ++ "\n")
+      input-draw-offer(current-player, invalid-input-warning)
 
 pub effect board-state
   fun get-board() : board
@@ -108,7 +137,7 @@ fun has-valid-moves(current-board : board, current-player : player) : bool
 
   has-valid-moves-by-figure(current-board.figures.filter(fn(current) current.figure-player == current-player))
 
-fun validate-input-turn(current-action : action, current-board : board, current-player : player) : bool
+fun validate-input-turn(current-action : action, current-board : board, current-player : player, can-offer-draw : bool = True) : bool
   match current-action
     Move(x, to-location) ->
       match valid-moves(x, current-board).find(fn(current) current == to-location)
@@ -119,22 +148,23 @@ fun validate-input-turn(current-action : action, current-board : board, current-
         Nothing -> False
     KingsideCastling     -> validate-kingside-castling(current-board, current-player)
     QueensideCastling    -> validate-queenside-castling(current-board, current-player)
+    DrawOffer            -> can-offer-draw
     _                    -> True
 
-fun input-turn(current-board : board, current-player : player, invalid-input-warning : string) : <div, console, read-input-turn> action
+fun input-turn(current-board : board, current-player : player, invalid-input-warning : string, can-offer-draw : bool = True) : <div, console, read-input-turn> action
   print(current-player.show ++ "'s turn: ")
 
   match read-input-turn(current-player)
-    Just(x) | validate-input-turn(x, current-board, current-player) -> x
-    _                                                               ->
+    Just(x) | validate-input-turn(x, current-board, current-player, can-offer-draw) -> x
+    _                                                                               ->
       println("\n" ++ invalid-input-warning ++ "\n")
-      input-turn(current-board, current-player, invalid-input-warning)
+      input-turn(current-board, current-player, invalid-input-warning, can-offer-draw)
 
-pub fun turn(current-player : player) : <div, console, board-state, read-input-turn> maybe<player>
+pub fun turn(current-player : player, can-offer-draw : bool = True) : <div, console, board-state, read-input-turn, read-input-draw-offer> maybe<player>
   println(get-board().show)
   println("")
   
-  val current-action = input-turn(get-board(), current-player, "Invalid input!")
+  val current-action = input-turn(get-board(), current-player, "Invalid input!", can-offer-draw)
   println("")
 
   perform-turn(current-action, current-player)
@@ -143,7 +173,11 @@ pub fun turn(current-player : player) : <div, console, board-state, read-input-t
 
   match current-action
     Surrender -> Just(current-opponent)
-    DrawOffer -> turn(current-opponent) // TODO
+    DrawOffer -> 
+      val response = input-draw-offer(current-player, "Invalid input!")
+      println("")
+      
+      if response then Nothing else turn(current-player, False)
     _         ->
       if !has-valid-moves(get-board(), current-opponent) &&
          !validate-kingside-castling(get-board(), current-opponent) &&
