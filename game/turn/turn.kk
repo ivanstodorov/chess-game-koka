@@ -16,25 +16,25 @@ type action
 
 pub effect board-state
   fun get-board() : board
-  fun perform-turn(current-action : action, current-player : player) : either<player, maybe<player>>
+  fun set-board(new-board : board) : ()
 
 pub fun handle-board-state(initial-state : board, action : () -> <board-state | e> a) : e a
   var current-board-state := initial-state
 
   with handler
     fun get-board() current-board-state
-
-    fun perform-turn(current-action, current-player)
-      match current-action
-        Move(Figure(x, y, z), to-location) ->
-          current-board-state := Board(Cons(Figure(x, y, to-location), current-board-state.figures.remove(fn(current) current.figure-location == z || current.figure-location == to-location)))
-          Left(current-player.opponent) // TODO (Checkmate?)
-        KingsideCastling                   -> Left(current-player.opponent) // TODO
-        QueensideCastling                  -> Left(current-player.opponent) // TODO
-        DrawOffer                          -> Left(current-player.opponent) // TODO
-        Surrender                          -> Right(Just(current-player.opponent))
+    fun set-board(new-board) current-board-state := new-board
 
   action()
+
+fun perform-turn(current-action : action, current-player : player) : board-state ()
+  val current-opponent = current-player.opponent
+
+  match current-action
+    Move(Figure(x, y, z), to-location) -> set-board(Board(Cons(Figure(x, y, to-location), get-board().figures.remove(fn(current) current.figure-location == z || current.figure-location == to-location))))
+    KingsideCastling                   -> () // TODO
+    QueensideCastling                  -> () // TODO
+    _                                  -> ()
 
 pub effect fun read-input-turn(current-player : player) : maybe<action>
 
@@ -87,34 +87,71 @@ pub fun handle-read-input-turn(action : () -> <console, exn, board-state, read-i
 
   action()
 
-fun validate-input-turn(current-action : action, current-player : player) : board-state bool
+fun validate-kingside-castling(current-board : board, current-player : player) : bool
+  False // TODO
+
+fun validate-queenside-castling(current-board : board, current-player : player) : bool
+  False // TODO
+
+fun is-in-check(current-board : board, current-player : player) : bool
+  match current-board.figures.find(fn(current) current.figure-type == King() && current.figure-player == current-player)
+    Just(Figure(_, _, current-location)) -> is-threatened(current-location, current-board, current-player.opponent)
+    Nothing                              -> False
+
+fun has-valid-moves(current-board : board, current-player : player) : bool
+  fun has-valid-moves-by-figure(current-figures : list<figure>) : bool
+    match current-figures
+      Cons(head, tail)
+        | is-cons(valid-moves(head, current-board).filter(fn(current) validate-input-turn(Move(head, current), current-board, current-player))) -> True
+        | _                                                                                                                                     -> has-valid-moves-by-figure(tail)
+      _                                                                                                                                         -> False
+
+  has-valid-moves-by-figure(current-board.figures.filter(fn(current) current.figure-player == current-player))
+
+fun validate-input-turn(current-action : action, current-board : board, current-player : player) : bool
   match current-action
     Move(x, to-location) ->
-      match valid-moves(x, get-board()).find(fn(current) current == to-location)
-        Just(_) -> True // TODO (Is the king in check?)
+      match valid-moves(x, current-board).find(fn(current) current == to-location)
+        Just(_) ->
+          with handle-board-state(current-board)
+          perform-turn(current-action, current-player)
+          !is-in-check(get-board(), current-player)
         Nothing -> False
-    KingsideCastling                  -> False // TODO
-    QueensideCastling                 -> False // TODO
-    _                                 -> True
+    KingsideCastling     -> validate-kingside-castling(current-board, current-player)
+    QueensideCastling    -> validate-queenside-castling(current-board, current-player)
+    _                    -> True
 
-fun input-turn(current-player : player, invalid-input-warning : string) : <div, console, read-input-turn, board-state> action
-  fun handle-invalid-input() : <div, console, read-input-turn, board-state> action
-    println("\n" ++ invalid-input-warning ++ "\n")
-    input-turn(current-player, invalid-input-warning)
-
+fun input-turn(current-board : board, current-player : player, invalid-input-warning : string) : <div, console, read-input-turn> action
   print(current-player.show ++ "'s turn: ")
 
   match read-input-turn(current-player)
-    Just(x) -> if validate-input-turn(x, current-player) then x else handle-invalid-input()
-    _       -> handle-invalid-input()
+    Just(x) | validate-input-turn(x, current-board, current-player) -> x
+    _                                                               ->
+      println("\n" ++ invalid-input-warning ++ "\n")
+      input-turn(current-board, current-player, invalid-input-warning)
 
 pub fun turn(current-player : player) : <div, console, board-state, read-input-turn> maybe<player>
   println(get-board().show)
   println("")
   
-  val current-action = input-turn(current-player, "Invalid input!")
+  val current-action = input-turn(get-board(), current-player, "Invalid input!")
   println("")
 
-  match perform-turn(current-action, current-player)
-    Left(x)  -> turn(x)
-    Right(x) -> x
+  perform-turn(current-action, current-player)
+
+  val current-opponent = current-player.opponent
+
+  match current-action
+    Surrender -> Just(current-opponent)
+    DrawOffer -> turn(current-opponent) // TODO
+    _         ->
+      if !has-valid-moves(get-board(), current-opponent) &&
+         !validate-kingside-castling(get-board(), current-opponent) &&
+         !validate-queenside-castling(get-board(), current-opponent)
+      then
+        println(get-board().show)
+        println("")
+
+        if is-in-check(get-board(), current-opponent) then Just(current-player) else Nothing
+      else
+        turn(current-opponent)

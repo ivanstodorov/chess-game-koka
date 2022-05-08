@@ -10,9 +10,8 @@ pub fun main() : <div, console, exn> ()
         println("")
 
         match game()
-          Just(White) -> println("White player wins!")
-          Just(Black) -> println("Black player wins!")
-          _           -> println("Draw!")
+          Just(x) -> println(x.show ++ " wins!")
+          _       -> println("Draw!")
 
         println("")
         start()

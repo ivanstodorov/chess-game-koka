@@ -7,9 +7,19 @@ pub type figure-type
   Pawn(has-moved : bool = False, en-passant : bool = False)
   Knight
   Bishop
-  Rook(kingside-castling : bool = False, queenside-castling : bool = False)
+  Rook(has-moved : bool = False)
   Queen
-  King(castling : bool = True)
+  King(has-moved : bool = False)
+
+pub fun (==)(x : figure-type, y : figure-type)
+  match (x, y)
+    (Pawn,   Pawn)   -> True
+    (Knight, Knight) -> True
+    (Bishop, Bishop) -> True
+    (Rook,   Rook)   -> True
+    (Queen,  Queen)  -> True
+    (King,   King)   -> True
+    _                -> False
 
 pub struct figure
   figure-type     : figure-type

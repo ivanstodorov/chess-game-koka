@@ -10,14 +10,14 @@ pub struct board
                             Figure(Pawn(), White, (6, 4)), Figure(Pawn(), White, (6, 5)), Figure(Pawn(), White, (6, 6)), Figure(Pawn(), White, (6, 7)),
                             Figure(Knight, White, (7, 1)), Figure(Knight, White, (7, 6)),
                             Figure(Bishop, White, (7, 2)), Figure(Bishop, White, (7, 5)),
-                            Figure(Rook(queenside-castling=True), White, (7, 0)), Figure(Rook(kingside-castling=True), White, (7, 7)),
+                            Figure(Rook(), White, (7, 0)), Figure(Rook(), White, (7, 7)),
                             Figure(Queen, White, (7, 3)),
                             Figure(King(), White, (7, 4)),
                             Figure(Pawn(), Black, (1, 0)), Figure(Pawn(), Black, (1, 1)), Figure(Pawn(), Black, (1, 2)), Figure(Pawn(), Black, (1, 3)),
                             Figure(Pawn(), Black, (1, 4)), Figure(Pawn(), Black, (1, 5)), Figure(Pawn(), Black, (1, 6)), Figure(Pawn(), Black, (1, 7)),
                             Figure(Knight, Black, (0, 1)), Figure(Knight, Black, (0, 6)),
                             Figure(Bishop, Black, (0, 2)), Figure(Bishop, Black, (0, 5)),
-                            Figure(Rook(queenside-castling=True), Black, (0, 0)), Figure(Rook(kingside-castling=True), Black, (0, 7)),
+                            Figure(Rook(), Black, (0, 0)), Figure(Rook(), Black, (0, 7)),
                             Figure(Queen, Black, (0, 3)),
                             Figure(King(), Black, (0, 4)),]
 
@@ -72,8 +72,8 @@ pub fun valid-moves(current-figure : figure, current-board : board) : list<locat
     0 <= x.fst && x.fst < board-rows && 0 <= x.snd && x.snd < board-columns && is-nothing(find-figure(current-board, x, Just(current-figure.figure-player)))
 
   match current-figure
-    Figure(Pawn(_has-moved, _en-passant),                 _current-player, _current-location) -> Nil // TODO
-    Figure(Knight,                                        _,                current-location) ->
+    Figure(Pawn(_has-moved, _en-passant), _current-player, _current-location) -> Nil // TODO
+    Figure(Knight,                        _,                current-location) ->
       filter([(current-location.fst - 2, current-location.snd - 1),
               (current-location.fst - 2, current-location.snd + 1),
               (current-location.fst + 2, current-location.snd - 1),
@@ -82,7 +82,17 @@ pub fun valid-moves(current-figure : figure, current-board : board) : list<locat
               (current-location.fst - 1, current-location.snd + 2),
               (current-location.fst + 1, current-location.snd - 2),
               (current-location.fst + 1, current-location.snd + 2)], validate-location)
-    Figure(Bishop,                                        _current-player, _current-location) -> Nil // TODO
-    Figure(Rook(_kingside_castling, _queenside_castling), _current-player, _current-location) -> Nil // TODO
-    Figure(Queen,                                         _current-player, _current-location) -> Nil // TODO
-    Figure(King,                                          _current-player, _current-location) -> Nil // TODO
+    Figure(Bishop,                        _current-player, _current-location) -> Nil // TODO
+    Figure(Rook(_has-moved),              _current-player, _current-location) -> Nil // TODO
+    Figure(Queen,                         _current-player, _current-location) -> Nil // TODO
+    Figure(King(_has-moved),              _current-player, _current-location) -> Nil // TODO
+
+pub fun is-threatened(current-location : location, current-board : board, current-player : player) : bool
+  fun is-threatened-by-figure(current-figures : list<figure>) : bool
+    match current-figures
+      Cons(head, tail)
+        | is-just(valid-moves(head, current-board).find(fn(current) current == current-location)) -> True
+        | _                                                                                       -> is-threatened-by-figure(tail)
+      _                                                                                           -> False
+
+  is-threatened-by-figure(current-board.figures.filter(fn(current) current.figure-player == current-player))
