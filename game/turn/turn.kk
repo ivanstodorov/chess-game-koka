@@ -4,6 +4,8 @@ pub import game/board/board
 
 import std/os/readline
 
+val default-invalid-input-warning = "Invalid input!"
+
 val synonyms-for-surrender = ["good game", "gg", "forfait", "ff"]
 val synonyms-for-draw = ["remis", "draw", "tie"]
 val synonyms-for-accept = ["accept", "yes", "y"]
@@ -15,6 +17,78 @@ type action
   QueensideCastling(current-player : player)
   DrawOffer
   Surrender
+
+type pawn-promotion
+  PromoteToKnight
+  PromoteToBishop
+  PromoteToRook
+  PromoteToQueen
+
+fun pawn-promotion-to-figure-type(current-pawn-promotion : pawn-promotion) : figure-type
+  match current-pawn-promotion 
+    PromoteToKnight -> Knight
+    PromoteToBishop -> Bishop
+    PromoteToRook -> Rook(True)
+    PromoteToQueen -> Queen
+
+pub effect fun read-input-pawn-promotion() : maybe<pawn-promotion>
+
+pub fun handle-read-input-pawn-promotion(action : () -> <console, exn, read-input-pawn-promotion | e> a) : <console, exn | e> a
+  with fun read-input-pawn-promotion()
+    val temp = readline()
+
+    if is-empty(temp) then return Nothing
+
+    val input = temp.to-lower
+
+    if input == "knight" || input == "n" then return Just(PromoteToKnight)
+    if input == "bishop" || input == "b" then return Just(PromoteToBishop)
+    if input == "rook" || input == "r" then return Just(PromoteToRook)
+    if input == "queen" || input == "q" then return Just(PromoteToQueen)
+
+    Nothing
+  
+  action()
+
+fun input-pawn-promotion(current-location : location, current-player : player, invalid-input-warning : string = default-invalid-input-warning) : <div, console, read-input-pawn-promotion> pawn-promotion
+  fun parse-location(x : location)
+    fun parse-row(row : int) : string
+      match row
+        0 -> "8"
+        1 -> "7"
+        2 -> "6"
+        3 -> "5"
+        4 -> "4"
+        5 -> "3"
+        6 -> "2"
+        7 -> "1"
+        _ -> "X"
+
+    fun parse-column(column : int) : string
+      match column
+        0 -> "A"
+        1 -> "B"
+        2 -> "C"
+        3 -> "D"
+        4 -> "E"
+        5 -> "F"
+        6 -> "G"
+        7 -> "H"
+        _ -> "X"
+
+    parse-column(x.snd) ++ parse-row(x.fst)
+
+  println("Pawn promotion at square " ++ parse-location(current-location) ++ ":")
+  print("Should the pawn be replaced with a knight (" ++ Figure(Knight, current-player, current-location).show ++
+          "), bishop (" ++ Figure(Bishop, current-player, current-location).show ++
+          "), rook (" ++ Figure(Rook(True), current-player, current-location).show ++
+          ") or queen (" ++ Figure(Queen, current-player, current-location).show ++ "): ")
+
+  match read-input-pawn-promotion()
+    Just(x) -> x
+    _       ->
+      println("\n" ++ invalid-input-warning ++ "\n")
+      input-pawn-promotion(current-location, current-player, invalid-input-warning)
 
 pub effect fun read-input-draw-offer() : maybe<bool>
 
@@ -33,7 +107,7 @@ pub fun handle-read-input-draw-offer(action : () -> <console, exn, read-input-dr
 
   action()
 
-fun input-draw-offer(current-player : player, invalid-input-warning : string) : <div, console, read-input-draw-offer> bool
+fun input-draw-offer(current-player : player, invalid-input-warning : string = default-invalid-input-warning) : <div, console, read-input-draw-offer> bool
   println(current-player.show ++ " offered a draw.")
   print(current-player.opponent.show ++ "'s response: ")
 
@@ -81,7 +155,6 @@ fun perform-turn(current-action : action) : board-state ()
             removal-condition(current) || current.figure-location == left-en-passant-target(current-location, current-player)
 
           change-board(Figure(Pawn(True, False), current-player, to-location), removal-condition)
-          // TODO (Add pawn promotion)
         Rook()              ->
           change-board(Figure(Rook(True), current-player, to-location), removal-condition)
         King()              ->
@@ -178,14 +251,14 @@ fun validate-input-turn(current-action : action, current-board : board, can-offe
     DrawOffer                         -> can-offer-draw
     _                                 -> True
 
-fun input-turn(current-board : board, current-player : player, invalid-input-warning : string, can-offer-draw : bool = True) : <div, console, read-input-turn> action
+fun input-turn(current-board : board, current-player : player, can-offer-draw : bool = True, invalid-input-warning : string = default-invalid-input-warning) : <div, console, read-input-turn> action
   print(current-player.show ++ "'s turn: ")
 
   match read-input-turn(current-player)
     Just(x) | validate-input-turn(x, current-board, can-offer-draw) -> x
     _                                                                               ->
       println("\n" ++ invalid-input-warning ++ "\n")
-      input-turn(current-board, current-player, invalid-input-warning, can-offer-draw)
+      input-turn(current-board, current-player, can-offer-draw, invalid-input-warning)
 
 fun remove-en-passant(figures : list<figure>, current-player : player) : list<figure>
   match figures
@@ -194,21 +267,29 @@ fun remove-en-passant(figures : list<figure>, current-player : player) : list<fi
     Cons(head, tail)        -> Cons(head, remove-en-passant(tail, current-player))
     _                       -> Nil
 
-pub fun turn(current-player : player, can-offer-draw : bool = True) : <div, console, board-state, read-input-turn, read-input-draw-offer> maybe<player>
+pub fun turn(current-player : player, can-offer-draw : bool = True) : <div, console, board-state, read-input-turn, read-input-pawn-promotion, read-input-draw-offer> maybe<player>
   println(get-board().show)
   println("")
   
-  val current-action = input-turn(get-board(), current-player, "Invalid input!", can-offer-draw)
+  val current-action = input-turn(get-board(), current-player, can-offer-draw)
   println("")
 
   perform-turn(current-action)
+
+  match check-for-pawn-promotion(get-board(), current-player)
+    Just(current-location) ->
+      val new-figure = Figure(pawn-promotion-to-figure-type(input-pawn-promotion(current-location, current-player)), current-player, current-location)
+      println("")
+
+      set-board(Board(Cons(new-figure, get-board().figures.remove(fn(current) current.figure-location == current-location))))
+    _                      -> ()
 
   val current-opponent = current-player.opponent
 
   match current-action
     Surrender -> Just(current-opponent)
     DrawOffer -> 
-      val response = input-draw-offer(current-player, "Invalid input!")
+      val response = input-draw-offer(current-player)
       println("")
       
       if response then Nothing else turn(current-player, False)

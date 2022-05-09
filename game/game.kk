@@ -25,5 +25,6 @@ pub fun game() : <div, console, exn> maybe<player>
 
   with handle-board-state(Board())
   with handle-read-input-turn
+  with handle-read-input-pawn-promotion
   with handle-read-input-draw-offer
   turn(White)

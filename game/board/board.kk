@@ -107,6 +107,14 @@ pub fun left-en-passant-target(current-location : location, current-player : pla
     White -> (current-location.fst, current-location.snd - 1)
     _     -> (current-location.fst, current-location.snd + 1)
 
+pub fun check-for-pawn-promotion(current-board : board, current-player : player) : maybe<location>
+  current-board
+    .figures
+    .filter-map(fn(current) if current.figure-type == Pawn() && current.figure-player == current-player then Just(current.figure-location) else Nothing)
+    .find(fn(current) match current-player {
+      White -> current.fst == 0
+      _     -> current.fst == board-rows - 1})
+
 pub fun can-pawn-take-right(current-location : location, current-board : board, current-player : player) : bool
   is-just(find-figure(current-board, pawn-takes-right(current-location, current-player), Just(current-player.opponent)))
 
