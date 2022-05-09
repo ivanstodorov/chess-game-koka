@@ -11,10 +11,13 @@ val synonyms-for-draw = ["remis", "draw", "tie"]
 val synonyms-for-accept = ["accept", "yes", "y"]
 val synonyms-for-reject = ["reject", "no", "n"]
 
+type castling-type
+  Kingside
+  Queenside
+
 type action
   Move(selected-figure : figure, to : location)
-  KingsideCastling(current-player : player)
-  QueensideCastling(current-player : player)
+  Castling(castling-type : castling-type, current-player : player)
   DrawOffer
   Surrender
 
@@ -86,7 +89,8 @@ fun input-pawn-promotion(current-location : location, current-player : player, i
   print("Should the pawn be replaced with a knight (" ++ Figure(Knight, current-player, current-location).show ++
           "), bishop (" ++ Figure(Bishop, current-player, current-location).show ++
           "), rook (" ++ Figure(Rook(True), current-player, current-location).show ++
-          ") or queen (" ++ Figure(Queen, current-player, current-location).show ++ "): ")
+          ") or queen (" ++ Figure(Queen, current-player, current-location).show ++
+          "): ")
 
   match read-input-pawn-promotion()
     Just(x) -> x
@@ -165,8 +169,18 @@ fun perform-turn(current-action : action) : board-state ()
           change-board(Figure(King(True), current-player, to-location), removal-condition)
         current-figure-type ->
           change-board(Figure(current-figure-type, current-player, to-location), removal-condition)
-    KingsideCastling(_current-player)                                 -> () // TODO
-    QueensideCastling(_current-player)                                -> () // TODO
+    Castling(current-castling-type, current-player)                   ->
+      val king-start-location = get-king-start-location-for-castling(current-castling-type, current-player)
+      val king-destination = get-king-destination-for-castling(current-castling-type, current-player)
+
+      change-board(Figure(King(True), current-player, king-destination)) fn(current : figure)
+        current.figure-location == king-start-location || current.figure-location == king-destination
+
+      val rook-start-location = get-rook-start-location-for-castling(current-castling-type, current-player)
+      val rook-destination = get-rook-destination-for-castling(current-castling-type, current-player)
+
+      change-board(Figure(Rook(True), current-player, rook-destination)) fn(current : figure)
+        current.figure-location == rook-start-location || current.figure-location == rook-destination
     _                                                                 -> ()
 
 pub effect fun read-input-turn(current-player : player) : maybe<action>
@@ -203,8 +217,8 @@ pub fun handle-read-input-turn(action : () -> <console, exn, board-state, read-i
 
     val input = temp.to-lower
 
-    if input == "0-0" || input == "O-O" then return Just(KingsideCastling(current-player))
-    if input == "0-0-0" || input == "O-O-O" then return Just(QueensideCastling(current-player))
+    if input == "0-0" || input == "O-O" || input == "o-o" then return Just(Castling(Kingside, current-player))
+    if input == "0-0-0" || input == "O-O-O" || input == "o-o-o" then return Just(Castling(Queenside, current-player))
     if is-just(synonyms-for-draw.find(fn(current) current == input)) then return Just(DrawOffer)
     if is-just(synonyms-for-surrender.find(fn(current) current == input)) then return Just(Surrender)
 
@@ -220,11 +234,66 @@ pub fun handle-read-input-turn(action : () -> <console, exn, board-state, read-i
 
   action()
 
-fun validate-kingside-castling(current-board : board, current-player : player) : bool
-  False // TODO
+fun get-king-start-location-for-castling(current-castling-type : castling-type, current-player : player) : location
+  match current-player
+    White -> (4, 0)
+    _     -> (4, 7)
 
-fun validate-queenside-castling(current-board : board, current-player : player) : bool
-  False // TODO
+fun get-king-destination-for-castling(current-castling-type : castling-type, current-player : player) : location
+  match current-player
+    White ->
+      match current-castling-type
+        Kingside -> (6, 0)
+        _        -> (2, 0)
+    _     ->
+      match current-castling-type
+        Kingside -> (6, 7)
+        _        -> (2, 7)
+
+fun get-rook-start-location-for-castling(current-castling-type : castling-type, current-player : player) : location
+  match current-player
+    White ->
+      match current-castling-type
+        Kingside -> (7, 0)
+        _        -> (0, 0)
+    _     ->
+      match current-castling-type
+        Kingside -> (7, 7)
+        _        -> (0, 7)
+
+fun get-rook-destination-for-castling(current-castling-type : castling-type, current-player : player) : location
+  match current-player
+    White ->
+      match current-castling-type
+        Kingside -> (5, 0)
+        _        -> (3, 0)
+    _     ->
+      match current-castling-type
+        Kingside -> (5, 7)
+        _        -> (3, 7)
+
+fun get-critical-locations-for-castling(current-castling-type : castling-type, current-player : player) : list<location>
+  match current-player
+    White ->
+      match current-castling-type
+        Kingside -> [(5, 0), (6, 0)]
+        _        -> [(2, 0), (3, 0)]
+    _     ->
+      match current-castling-type
+        Kingside -> [(5, 7), (6, 7)]
+        _        -> [(2, 7), (3, 7)]
+
+fun validate-castling(current-castling-type : castling-type, current-board : board, current-player : player) : bool
+  if is-in-check(current-board, current-player) then return False
+
+  match(find-figure(current-board, get-king-start-location-for-castling(current-castling-type, current-player), Just(current-player)),
+        find-figure(current-board, get-rook-start-location-for-castling(current-castling-type, current-player), Just(current-player)))
+    (Just(Figure(King(False), x, _)), Just(Figure(Rook(False), y, _)))
+      | x == current-player && y == current-player ->
+        is-nil(get-critical-locations-for-castling(current-castling-type, current-player).filter(fn(current) {
+          is-threatened(current, current-board, current-player.opponent)
+        }))
+    _                                              -> False
 
 fun is-in-check(current-board : board, current-player : player) : bool
   match current-board.figures.find(fn(current) current.figure-type == King() && current.figure-player == current-player)
@@ -243,17 +312,16 @@ fun has-valid-moves(current-board : board, current-player : player) : bool
 
 fun validate-input-turn(current-action : action, current-board : board, can-offer-draw : bool = True) : bool
   match current-action
-    Move(x, to-location)              ->
+    Move(x, to-location)                            ->
       match valid-moves(x, current-board).find(fn(current) current == to-location)
         Just(_) ->
           with handle-board-state(current-board)
           perform-turn(current-action)
           !is-in-check(get-board(), x.figure-player)
         Nothing -> False
-    KingsideCastling(current-player)  -> validate-kingside-castling(current-board, current-player)
-    QueensideCastling(current-player) -> validate-queenside-castling(current-board, current-player)
-    DrawOffer                         -> can-offer-draw
-    _                                 -> True
+    Castling(current-castling-type, current-player) -> validate-castling(current-castling-type, current-board, current-player)
+    DrawOffer                                       -> can-offer-draw
+    _                                               -> True
 
 fun input-turn(current-board : board, current-player : player, can-offer-draw : bool = True, invalid-input-warning : string = default-invalid-input-warning) : <div, console, read-input-turn> action
   print(current-player.show ++ "'s turn: ")
@@ -299,8 +367,8 @@ pub fun turn(current-player : player, can-offer-draw : bool = True) : <div, cons
         _                      -> ()
 
       if !has-valid-moves(get-board(), current-opponent) &&
-         !validate-kingside-castling(get-board(), current-opponent) &&
-         !validate-queenside-castling(get-board(), current-opponent)
+         !validate-castling(Kingside, get-board(), current-opponent) &&
+         !validate-castling(Queenside, get-board(), current-opponent)
       then
         println(get-board().show)
         println("")
