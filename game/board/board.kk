@@ -135,13 +135,13 @@ pub fun valid-moves(current-figure : figure, current-board : board) : list<locat
     for-while(1, board-rows - 1) fn(i)
       val current = match move-direction
         North     -> (x.fst, x.snd + i)
-        NorthEast -> (x.fst + 1, x.snd + 1)
-        East      -> (x.fst + 1, x.snd)
-        SouthEast -> (x.fst + 1, x.snd - 1)
-        South     -> (x.fst, x.snd - 1)
-        SouthWest -> (x.fst - 1, x.snd - 1)
-        West      -> (x.fst - 1, x.snd)
-        NorthWest -> (x.fst - 1, x.snd + 1)
+        NorthEast -> (x.fst + i, x.snd + i)
+        East      -> (x.fst + i, x.snd)
+        SouthEast -> (x.fst + i, x.snd - i)
+        South     -> (x.fst, x.snd - i)
+        SouthWest -> (x.fst - i, x.snd - i)
+        West      -> (x.fst - i, x.snd)
+        NorthWest -> (x.fst - i, x.snd + i)
 
       if !validate-location(current) return Just(())
 
