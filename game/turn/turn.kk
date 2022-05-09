@@ -51,34 +51,38 @@ pub fun handle-read-input-pawn-promotion(action : () -> <console, exn, read-inpu
   action()
 
 fun input-pawn-promotion(current-location : location, current-player : player, invalid-input-warning : string = default-invalid-input-warning) : <div, console, read-input-pawn-promotion> pawn-promotion
-  fun parse-location(x : location)
-    fun parse-row(row : int) : string
+  fun parse-location(x : location) : maybe<string>
+    fun parse-row(row : int) : maybe<string>
       match row
-        0 -> "8"
-        1 -> "7"
-        2 -> "6"
-        3 -> "5"
-        4 -> "4"
-        5 -> "3"
-        6 -> "2"
-        7 -> "1"
-        _ -> "X"
+        0 -> Just("1")
+        1 -> Just("2")
+        2 -> Just("3")
+        3 -> Just("4")
+        4 -> Just("5")
+        5 -> Just("6")
+        6 -> Just("7")
+        7 -> Just("8")
+        _ -> Nothing
 
-    fun parse-column(column : int) : string
+    fun parse-column(column : int) : maybe<string>
       match column
-        0 -> "A"
-        1 -> "B"
-        2 -> "C"
-        3 -> "D"
-        4 -> "E"
-        5 -> "F"
-        6 -> "G"
-        7 -> "H"
-        _ -> "X"
+        0 -> Just("A")
+        1 -> Just("B")
+        2 -> Just("C")
+        3 -> Just("D")
+        4 -> Just("E")
+        5 -> Just("F")
+        6 -> Just("G")
+        7 -> Just("H")
+        _ -> Nothing
 
-    parse-column(x.snd) ++ parse-row(x.fst)
+    match (parse-column(x.fst), parse-row(x.snd))
+      (Just(y), Just(z)) -> Just(y ++ z)
+      _                  -> Nothing
 
-  println("Pawn promotion at square " ++ parse-location(current-location) ++ ":")
+  match parse-location(current-location)
+    Just(x) -> println("Pawn promotion at square " ++ x ++ ":")
+    _       -> println("Pawn promotion:")
   print("Should the pawn be replaced with a knight (" ++ Figure(Knight, current-player, current-location).show ++
           "), bishop (" ++ Figure(Bishop, current-player, current-location).show ++
           "), rook (" ++ Figure(Rook(True), current-player, current-location).show ++
@@ -170,14 +174,14 @@ pub effect fun read-input-turn(current-player : player) : maybe<action>
 pub fun handle-read-input-turn(action : () -> <console, exn, board-state, read-input-turn | e> a) : <console, exn, board-state | e> a
   fun parse-row(row : char) : maybe<int>
     match row
-      '1' -> Just(7)
-      '2' -> Just(6)
-      '3' -> Just(5)
-      '4' -> Just(4)
-      '5' -> Just(3)
-      '6' -> Just(2)
-      '7' -> Just(1)
-      '8' -> Just(0)
+      '1' -> Just(0)
+      '2' -> Just(1)
+      '3' -> Just(2)
+      '4' -> Just(3)
+      '5' -> Just(4)
+      '6' -> Just(5)
+      '7' -> Just(6)
+      '8' -> Just(7)
       _   -> Nothing
 
   fun parse-column(column : char) : maybe<int>
@@ -206,7 +210,7 @@ pub fun handle-read-input-turn(action : () -> <console, exn, board-state, read-i
 
     match list(input)
       Cons(m, Cons(n, Cons(o, Cons(p, Nil)))) ->
-        match ((parse-row(n), parse-column(m)), (parse-row(p), parse-column(o)))
+        match ((parse-column(m), parse-row(n)), (parse-column(o), parse-row(p)))
           ((Just(q), Just(r)), (Just(s), Just(t))) -> 
             match find-figure(get-board(), (q, r), Just(current-player))
               Just(x) -> Just(Move(x, (s, t)))
@@ -276,14 +280,6 @@ pub fun turn(current-player : player, can-offer-draw : bool = True) : <div, cons
 
   perform-turn(current-action)
 
-  match check-for-pawn-promotion(get-board(), current-player)
-    Just(current-location) ->
-      val new-figure = Figure(pawn-promotion-to-figure-type(input-pawn-promotion(current-location, current-player)), current-player, current-location)
-      println("")
-
-      set-board(Board(Cons(new-figure, get-board().figures.remove(fn(current) current.figure-location == current-location))))
-    _                      -> ()
-
   val current-opponent = current-player.opponent
 
   match current-action
@@ -293,7 +289,15 @@ pub fun turn(current-player : player, can-offer-draw : bool = True) : <div, cons
       println("")
       
       if response then Nothing else turn(current-player, False)
-    _         ->
+    _         ->          
+      match check-for-pawn-promotion(get-board(), current-player)
+        Just(current-location) ->
+          val new-figure = Figure(pawn-promotion-to-figure-type(input-pawn-promotion(current-location, current-player)), current-player, current-location)
+          println("")
+
+          set-board(Board(Cons(new-figure, get-board().figures.remove(fn(current) current.figure-location == current-location))))
+        _                      -> ()
+
       if !has-valid-moves(get-board(), current-opponent) &&
          !validate-kingside-castling(get-board(), current-opponent) &&
          !validate-queenside-castling(get-board(), current-opponent)
