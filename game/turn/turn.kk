@@ -290,9 +290,9 @@ fun validate-castling(current-castling-type : castling-type, current-board : boa
         find-figure(current-board, get-rook-start-location-for-castling(current-castling-type, current-player), Just(current-player)))
     (Just(Figure(King(False), x, _)), Just(Figure(Rook(False), y, _)))
       | x == current-player && y == current-player ->
-        is-nil(get-critical-locations-for-castling(current-castling-type, current-player).filter(fn(current) {
-          is-threatened(current, current-board, current-player.opponent)
-        }))
+        is-nil(get-critical-locations-for-castling(current-castling-type, current-player).filter fn(current)
+          is-just(find-figure(current-board, current)) || is-threatened(current, current-board, current-player.opponent)
+        )
     _                                              -> False
 
 fun is-in-check(current-board : board, current-player : player) : bool
@@ -328,7 +328,8 @@ fun input-turn(current-board : board, current-player : player, can-offer-draw : 
 
   match read-input-turn(current-player)
     Just(x) | validate-input-turn(x, current-board, can-offer-draw) -> x
-    _                                                                               ->
+    _                                                               ->
+      // println("\n" ++ current-board.show) // Prints the board after an invalid input.
       println("\n" ++ invalid-input-warning ++ "\n")
       input-turn(current-board, current-player, can-offer-draw, invalid-input-warning)
 
