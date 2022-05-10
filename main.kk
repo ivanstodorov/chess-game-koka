@@ -11,7 +11,7 @@ pub fun main() : <div, console, exn> ()
       NewGameAction -> 
         println("")
 
-        match game()
+        match game(White)
           Just(x) -> println(x.show ++ " wins!")
           _       -> println("Draw!")
 

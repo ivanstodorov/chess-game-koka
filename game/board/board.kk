@@ -1,6 +1,9 @@
 module game/board/board
 
 pub import game/figure/figure
+pub import game/figure/figure-type/figure-type
+pub import game/board/location/location
+pub import game/player/player
 
 val board-rows = 8
 val board-columns = 8

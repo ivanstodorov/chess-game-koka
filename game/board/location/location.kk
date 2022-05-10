@@ -1,4 +1,4 @@
-module game/figure/location/location
+module game/board/location/location
 
 pub alias location = (int, int)
 
