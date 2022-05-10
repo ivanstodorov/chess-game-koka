@@ -23,8 +23,11 @@ pub fun game() : <div, console, exn> maybe<player>
   // println("===++===+===+===+===+===+===+===+===++---")
   // println("   || A | B | C | D | E | F | G | H ||   ")
 
+  val initial-player = White
+
   with handle-board-state(Board())
+  with handle-board-history(Game-state(initial-player, get-board(), False, False, False, False))
   with handle-read-input-turn
   with handle-read-input-pawn-promotion
   with handle-read-input-draw-offer
-  turn(White)
+  turn(initial-player)

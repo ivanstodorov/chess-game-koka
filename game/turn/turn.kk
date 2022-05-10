@@ -11,6 +11,22 @@ val synonyms-for-draw = ["remis", "draw", "tie"]
 val synonyms-for-accept = ["accept", "yes", "y"]
 val synonyms-for-reject = ["reject", "no", "n"]
 
+pub struct game-state
+  current-player : player
+  current-board : board
+  white-can-kingside-castle : bool
+  black-can-kingside-castle : bool
+  white-can-queenside-castle : bool
+  black-can-queenside-castle : bool
+
+fun (==)(x : game-state, y : game-state) : bool
+  x.current-player == y.current-player &&
+  x.current-board == y.current-board &&
+  x.white-can-kingside-castle == y.white-can-kingside-castle &&
+  x.black-can-kingside-castle == y.black-can-kingside-castle &&
+  x.white-can-queenside-castle == y.white-can-queenside-castle &&
+  x.black-can-queenside-castle == y.black-can-queenside-castle
+
 type castling-type
   Kingside
   Queenside
@@ -33,6 +49,21 @@ fun pawn-promotion-to-figure-type(current-pawn-promotion : pawn-promotion) : fig
     PromoteToBishop -> Bishop
     PromoteToRook -> Rook(True)
     PromoteToQueen -> Queen
+
+pub effect board-history
+  fun get-history() : list<game-state>
+  fun add-to-history(new-entry : game-state) : ()
+  fun clear-history() : ()
+
+pub fun handle-board-history(initial-entry : game-state, action : () -> <board-history | e> a) : e a
+  var history := [initial-entry]
+
+  with handler
+    fun get-history() history
+    fun add-to-history(new-entry) history := Cons(new-entry, history)
+    fun clear-history() history := Nil
+  
+  action()
 
 pub effect fun read-input-pawn-promotion() : maybe<pawn-promotion>
 
@@ -340,12 +371,17 @@ fun remove-en-passant(figures : list<figure>, current-player : player) : list<fi
     Cons(head, tail)        -> Cons(head, remove-en-passant(tail, current-player))
     _                       -> Nil
 
-pub fun turn(current-player : player, can-offer-draw : bool = True) : <div, console, board-state, read-input-turn, read-input-pawn-promotion, read-input-draw-offer> maybe<player>
+pub fun turn(current-player : player, can-offer-draw : bool = True) : <div, console, board-state, board-history, read-input-turn, read-input-pawn-promotion, read-input-draw-offer> maybe<player>
   println(get-board().show)
   println("")
   
   val current-action = input-turn(get-board(), current-player, can-offer-draw)
   println("")
+
+  match current-action
+    Move(Figure(Pawn, _, _), _) -> clear-history()
+    Move(_, to-location)        -> if is-just(find-figure(get-board(), to-location, Just(current-player.opponent))) then clear-history()
+    _                           -> ()
 
   perform-turn(current-action)
 
@@ -358,7 +394,7 @@ pub fun turn(current-player : player, can-offer-draw : bool = True) : <div, cons
       println("")
       
       if response then Nothing else turn(current-player, False)
-    _         ->          
+    _         ->
       match check-for-pawn-promotion(get-board(), current-player)
         Just(current-location) ->
           val new-figure = Figure(pawn-promotion-to-figure-type(input-pawn-promotion(current-location, current-player)), current-player, current-location)
@@ -374,7 +410,29 @@ pub fun turn(current-player : player, can-offer-draw : bool = True) : <div, cons
         println(get-board().show)
         println("")
 
-        if is-in-check(get-board(), current-opponent) then Just(current-player) else Nothing
-      else
-        set-board(Board(get-board().figures.remove-en-passant(current-opponent)))
-        turn(current-opponent)
+        return if is-in-check(get-board(), current-opponent) then Just(current-player) else Nothing
+
+      set-board(Board(get-board().figures.remove-en-passant(current-opponent)))
+
+      add-to-history(Game-state(current-player.opponent,
+                                get-board(),
+                                validate-castling(Kingside, get-board(), White),
+                                validate-castling(Kingside, get-board(), Black),
+                                validate-castling(Queenside, get-board(), White),
+                                validate-castling(Queenside, get-board(), Black)))
+
+      fun count-occurences(current-game-state : game-state, current-history : list<game-state>) : int
+        match current-history
+          Cons(head, tail)
+            | head == current-game-state -> 1 + count-occurences(current-game-state, tail)
+            | _                          -> count-occurences(current-game-state, tail)
+          _                              -> 1
+
+      if get-history().length > 50 || is-cons(get-history().map-peek(count-occurences).filter(fn(current) current >= 3))
+      then
+        println(get-board().show)
+        println("")
+
+        return Nothing
+
+      turn(current-opponent)

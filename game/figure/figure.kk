@@ -26,9 +26,9 @@ pub fun (===)(x : figure-type, y : figure-type) : bool
     (Pawn(ly, lz), Pawn(ry, rz)) -> ly == ry && lz == rz
     (Knight,       Knight)       -> True
     (Bishop,       Bishop)       -> True
-    (Rook(ly),     Rook(ry))     -> ly == ry
+    (Rook,         Rook)         -> True
     (Queen,        Queen)        -> True
-    (King(ly),     King(ry))     -> ly == ry
+    (King,         King)         -> True
     _                            -> False
 
 pub struct figure

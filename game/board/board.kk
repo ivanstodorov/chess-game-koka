@@ -26,14 +26,15 @@ pub struct board
                             Figure(King(), White, (4, 0)), Figure(Bishop, White, (5, 0)), Figure(Knight, White, (6, 0)), Figure(Rook(), White, (7, 0))]
 
 pub fun (==)(x : board, y : board) : bool
-  fun helper(xs : list<(figure, figure)>) : bool
+  fun helper(xs : list<figure>, ys : list<figure>) : bool
     match xs
-      Cons((l, r), tail)
-        | l === r -> helper(tail)
-        | _       -> False
-      _           -> True
+      Cons(head, tail)         ->
+        match find-figure(Board(ys), head.figure-location, Just(head.figure-player))
+          Just(z) | z === head -> helper(tail, ys.remove(fn(current) current === z))
+          _                    -> False
+      _                        -> is-nil(ys)
 
-  if x.figures.length == y.figures.length then helper(zip(x.figures, y.figures)) else False
+  helper(x.figures, y.figures)
 
 pub fun find-figure(current-board : board, target-location : location, current-player : maybe<player> = Nothing) : maybe<figure>
   fun helper(xs : list<figure>) : maybe<figure>
