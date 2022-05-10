@@ -1,4 +1,4 @@
-module main-menu/effects/read-input-main-menu
+module effects-and-handlers/read-input-main-menu
 
 import main-menu/main-menu-action/main-menu-action
 
