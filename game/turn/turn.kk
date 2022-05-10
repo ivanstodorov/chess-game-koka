@@ -298,7 +298,7 @@ fun validate-castling(current-castling-type : castling-type, current-board : boa
 fun is-in-check(current-board : board, current-player : player) : bool
   match current-board.figures.find(fn(current) current.figure-type == King() && current.figure-player == current-player)
     Just(Figure(_, _, current-location)) -> is-threatened(current-location, current-board, current-player.opponent)
-    Nothing                              -> False
+    _                                    -> False
 
 fun has-valid-moves(current-board : board, current-player : player) : bool
   fun has-valid-moves-by-figure(current-figures : list<figure>) : bool

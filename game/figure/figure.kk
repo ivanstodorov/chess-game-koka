@@ -11,7 +11,7 @@ pub type figure-type
   Queen
   King(has-moved : bool = False)
 
-pub fun (==)(x : figure-type, y : figure-type)
+pub fun (==)(x : figure-type, y : figure-type) : bool
   match (x, y)
     (Pawn,   Pawn)   -> True
     (Knight, Knight) -> True
@@ -21,10 +21,26 @@ pub fun (==)(x : figure-type, y : figure-type)
     (King,   King)   -> True
     _                -> False
 
+pub fun (===)(x : figure-type, y : figure-type) : bool
+  match (x, y)
+    (Pawn(ly, lz), Pawn(ry, rz)) -> ly == ry && lz == rz
+    (Knight,       Knight)       -> True
+    (Bishop,       Bishop)       -> True
+    (Rook(ly),     Rook(ry))     -> ly == ry
+    (Queen,        Queen)        -> True
+    (King(ly),     King(ry))     -> ly == ry
+    _                            -> False
+
 pub struct figure
   figure-type     : figure-type
   figure-player   : player
   figure-location : location
+
+pub fun (==)(x : figure, y : figure) : bool
+  x.figure-type == y.figure-type && x.figure-player == y.figure-player && x.figure-location == y.figure-location
+
+pub fun (===)(x : figure, y : figure) : bool
+  x.figure-type === y.figure-type && x.figure-player == y.figure-player && x.figure-location == y.figure-location
 
 pub fun show(x : figure) : string
   match x
