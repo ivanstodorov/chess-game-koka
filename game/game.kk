@@ -1,93 +1,51 @@
 module game/game
 
-pub import game/figure/figure-type/figure-type
-pub import game/board/location/location
-pub import game/figure/figure
-pub import game/player/player
-pub import effects-and-handlers/show-board
-pub import game/board/board
+import effects-and-handlers/board-history
+import effects-and-handlers/show-board
+import effects-and-handlers/read-input-turn
+import game/board/board
+import game/board/location/location
+import game/figure/figure
+import game/figure/figure-type/figure-type
+import game/game-state/game-state
+import game/player/player
+import game/turn-action/turn-action
+import game/turn-action/castling-type/castling-type
+import game/turn-action/pawn-promotion-type/pawn-promotion-type
+import effects-and-handlers/board-state
+import effects-and-handlers/read-input-draw-offer
+import effects-and-handlers/read-input-pawn-promotion
 
 import std/os/readline
 
 val default-invalid-input-warning = "Invalid input!"
 
-val synonyms-for-surrender = ["good game", "gg", "forfait", "ff"]
-val synonyms-for-draw = ["remis", "draw", "tie"]
-val synonyms-for-accept = ["accept", "yes", "y"]
-val synonyms-for-reject = ["reject", "no", "n"]
+fun remove-en-passant(figures : list<figure>, current-player : player) : list<figure>
+  match figures
+    Cons(Figure(Pawn(x, True), y, z), tail) 
+      | y == current-player -> Cons(Figure(Pawn(x, False), y, z), remove-en-passant(tail, current-player))
+    Cons(head, tail)        -> Cons(head, remove-en-passant(tail, current-player))
+    _                       -> Nil
 
-pub struct game-state
-  current-player : player
-  current-board : board
-  white-can-kingside-castle : bool
-  black-can-kingside-castle : bool
-  white-can-queenside-castle : bool
-  black-can-queenside-castle : bool
+fun has-valid-moves(current-board : board, current-player : player) : bool
+  fun has-valid-moves-by-figure(current-figures : list<figure>) : bool
+    match current-figures
+      Cons(head, tail)
+        | is-cons(valid-moves(head, current-board).filter(fn(current) validate-input-turn(Move(head, current), current-board))) -> True
+        | _                                                                                                                     -> has-valid-moves-by-figure(tail)
+      _                                                                                                                         -> False
 
-fun (==)(x : game-state, y : game-state) : bool
-  x.current-player == y.current-player &&
-  x.current-board == y.current-board &&
-  x.white-can-kingside-castle == y.white-can-kingside-castle &&
-  x.black-can-kingside-castle == y.black-can-kingside-castle &&
-  x.white-can-queenside-castle == y.white-can-queenside-castle &&
-  x.black-can-queenside-castle == y.black-can-queenside-castle
+  has-valid-moves-by-figure(current-board.figures.filter(fn(current) current.figure-player == current-player))
 
-type castling-type
-  Kingside
-  Queenside
+fun input-draw-offer(current-player : player, invalid-input-warning : string = default-invalid-input-warning) : <div, console, read-input-draw-offer> bool
+  println(current-player.show ++ " offered a draw.")
+  print(current-player.opponent.show ++ "'s response: ")
 
-type action
-  Move(selected-figure : figure, to : location)
-  Castling(castling-type : castling-type, current-player : player)
-  DrawOffer
-  Surrender
-
-type pawn-promotion
-  PromoteToKnight
-  PromoteToBishop
-  PromoteToRook
-  PromoteToQueen
-
-fun pawn-promotion-to-figure-type(current-pawn-promotion : pawn-promotion) : figure-type
-  match current-pawn-promotion 
-    PromoteToKnight -> Knight
-    PromoteToBishop -> Bishop
-    PromoteToRook -> Rook(True)
-    PromoteToQueen -> Queen
-
-pub effect board-history
-  fun get-history() : list<game-state>
-  fun add-to-history(new-entry : game-state) : ()
-  fun clear-history() : ()
-
-pub fun handle-board-history(initial-entry : game-state, action : () -> <board-history | e> a) : e a
-  var history := [initial-entry]
-
-  with handler
-    fun get-history() history
-    fun add-to-history(new-entry) history := Cons(new-entry, history)
-    fun clear-history() history := Nil
-  
-  action()
-
-pub effect fun read-input-pawn-promotion() : maybe<pawn-promotion>
-
-pub fun handle-read-input-pawn-promotion(action : () -> <console, exn, read-input-pawn-promotion | e> a) : <console, exn | e> a
-  with fun read-input-pawn-promotion()
-    val temp = readline()
-
-    if is-empty(temp) then return Nothing
-
-    val input = temp.to-lower
-
-    if input == "knight" || input == "n" then return Just(PromoteToKnight)
-    if input == "bishop" || input == "b" then return Just(PromoteToBishop)
-    if input == "rook" || input == "r" then return Just(PromoteToRook)
-    if input == "queen" || input == "q" then return Just(PromoteToQueen)
-
-    Nothing
-  
-  action()
+  match read-input-draw-offer()
+    Just(x) -> x
+    _       ->
+      println("\n" ++ invalid-input-warning ++ "\n")
+      input-draw-offer(current-player, invalid-input-warning)
 
 fun input-pawn-promotion(current-location : location, current-player : player, invalid-input-warning : string = default-invalid-input-warning) : <div, console, read-input-pawn-promotion> pawn-promotion
   fun parse-location(x : location) : maybe<string>
@@ -134,46 +92,6 @@ fun input-pawn-promotion(current-location : location, current-player : player, i
       println("\n" ++ invalid-input-warning ++ "\n")
       input-pawn-promotion(current-location, current-player, invalid-input-warning)
 
-pub effect fun read-input-draw-offer() : maybe<bool>
-
-pub fun handle-read-input-draw-offer(action : () -> <console, exn, read-input-draw-offer | e> a) : <console, exn | e> a
-  with fun read-input-draw-offer()
-    val temp = readline()
-
-    if is-empty(temp) then return Nothing
-
-    val input = temp.to-lower
-
-    if is-just(synonyms-for-accept.find(fn(current) current == input)) then return Just(True)
-    if is-just(synonyms-for-reject.find(fn(current) current == input)) then return Just(False)
-
-    Nothing
-
-  action()
-
-fun input-draw-offer(current-player : player, invalid-input-warning : string = default-invalid-input-warning) : <div, console, read-input-draw-offer> bool
-  println(current-player.show ++ " offered a draw.")
-  print(current-player.opponent.show ++ "'s response: ")
-
-  match read-input-draw-offer()
-    Just(x) -> x
-    _       ->
-      println("\n" ++ invalid-input-warning ++ "\n")
-      input-draw-offer(current-player, invalid-input-warning)
-
-pub effect board-state
-  fun get-board() : board
-  fun set-board(new-board : board) : ()
-
-pub fun handle-board-state(initial-state : board, action : () -> <board-state | e> a) : e a
-  var current-board-state := initial-state
-
-  with handler
-    fun get-board() current-board-state
-    fun set-board(new-board) current-board-state := new-board
-
-  action()
-
 fun perform-turn(current-action : action) : board-state ()
   fun change-board(new-figure : figure, removal-condition : (figure) -> bool) : board-state ()
     set-board(Board(Cons(new-figure, get-board().figures.remove(removal-condition))))
@@ -218,57 +136,6 @@ fun perform-turn(current-action : action) : board-state ()
       change-board(Figure(Rook(True), current-player, rook-destination)) fn(current : figure)
         current.figure-location == rook-start-location || current.figure-location == rook-destination
     _                                                                 -> ()
-
-pub effect fun read-input-turn(current-player : player) : maybe<action>
-
-pub fun handle-read-input-turn(action : () -> <console, exn, board-state, read-input-turn | e> a) : <console, exn, board-state | e> a
-  fun parse-row(row : char) : maybe<int>
-    match row
-      '1' -> Just(0)
-      '2' -> Just(1)
-      '3' -> Just(2)
-      '4' -> Just(3)
-      '5' -> Just(4)
-      '6' -> Just(5)
-      '7' -> Just(6)
-      '8' -> Just(7)
-      _   -> Nothing
-
-  fun parse-column(column : char) : maybe<int>
-    match column
-      'a' -> Just(0)
-      'b' -> Just(1)
-      'c' -> Just(2)
-      'd' -> Just(3)
-      'e' -> Just(4)
-      'f' -> Just(5)
-      'g' -> Just(6)
-      'h' -> Just(7)
-      _   -> Nothing
-
-  with fun read-input-turn(current-player)
-    val temp = readline()
-
-    if is-empty(temp) then return Nothing
-
-    val input = temp.to-lower
-
-    if input == "0-0" || input == "O-O" || input == "o-o" then return Just(Castling(Kingside, current-player))
-    if input == "0-0-0" || input == "O-O-O" || input == "o-o-o" then return Just(Castling(Queenside, current-player))
-    if is-just(synonyms-for-draw.find(fn(current) current == input)) then return Just(DrawOffer)
-    if is-just(synonyms-for-surrender.find(fn(current) current == input)) then return Just(Surrender)
-
-    match list(input)
-      Cons(m, Cons(n, Cons(o, Cons(p, Nil)))) ->
-        match ((parse-column(m), parse-row(n)), (parse-column(o), parse-row(p)))
-          ((Just(q), Just(r)), (Just(s), Just(t))) -> 
-            match find-figure(get-board(), (q, r), Just(current-player))
-              Just(x) -> Just(Move(x, (s, t)))
-              Nothing -> Nothing
-          _                                        -> Nothing
-      _                                       -> Nothing
-
-  action()
 
 fun get-king-start-location-for-castling(current-castling-type : castling-type, current-player : player) : location
   match current-player
@@ -336,16 +203,6 @@ fun is-in-check(current-board : board, current-player : player) : bool
     Just(Figure(_, _, current-location)) -> is-threatened(current-location, current-board, current-player.opponent)
     _                                    -> False
 
-fun has-valid-moves(current-board : board, current-player : player) : bool
-  fun has-valid-moves-by-figure(current-figures : list<figure>) : bool
-    match current-figures
-      Cons(head, tail)
-        | is-cons(valid-moves(head, current-board).filter(fn(current) validate-input-turn(Move(head, current), current-board))) -> True
-        | _                                                                                                                     -> has-valid-moves-by-figure(tail)
-      _                                                                                                                         -> False
-
-  has-valid-moves-by-figure(current-board.figures.filter(fn(current) current.figure-player == current-player))
-
 fun validate-input-turn(current-action : action, current-board : board, can-offer-draw : bool = True) : bool
   match current-action
     Move(x, to-location)                            ->
@@ -362,21 +219,14 @@ fun validate-input-turn(current-action : action, current-board : board, can-offe
 fun input-turn(current-board : board, current-player : player, can-offer-draw : bool = True, invalid-input-warning : string = default-invalid-input-warning) : <div, console, read-input-turn> action
   print(current-player.show ++ "'s turn: ")
 
-  match read-input-turn(current-player)
+  match read-input-turn(current-player, current-board)
     Just(x) | validate-input-turn(x, current-board, can-offer-draw) -> x
     _                                                               ->
       // println("\n" ++ current-board.show) // Prints the board after an invalid input.
       println("\n" ++ invalid-input-warning ++ "\n")
       input-turn(current-board, current-player, can-offer-draw, invalid-input-warning)
 
-fun remove-en-passant(figures : list<figure>, current-player : player) : list<figure>
-  match figures
-    Cons(Figure(Pawn(x, True), y, z), tail) 
-      | y == current-player -> Cons(Figure(Pawn(x, False), y, z), remove-en-passant(tail, current-player))
-    Cons(head, tail)        -> Cons(head, remove-en-passant(tail, current-player))
-    _                       -> Nil
-
-pub fun turn(current-player : player, can-offer-draw : bool = True) : <div, console, board-state, board-history, read-input-turn, read-input-pawn-promotion, read-input-draw-offer, show-board> maybe<player>
+fun turn(current-player : player, can-offer-draw : bool = True) : <div, console, board-state, board-history, read-input-turn, read-input-pawn-promotion, read-input-draw-offer, show-board> maybe<player>
   println(show-board(get-board()))
   println("")
   
@@ -442,11 +292,5 @@ pub fun turn(current-player : player, can-offer-draw : bool = True) : <div, cons
 
       turn(current-opponent)
 
-pub fun game(initial-player : player) : <div, console, exn> maybe<player>
-  with handle-board-state(Board())
-  with handle-board-history(Game-state(initial-player, get-board(), False, False, False, False))
-  with handle-show-board
-  with handle-read-input-turn
-  with handle-read-input-pawn-promotion
-  with handle-read-input-draw-offer
+pub fun game(initial-player : player) : <div, console, board-state, board-history, read-input-turn, read-input-pawn-promotion, read-input-draw-offer, show-board> maybe<player>
   turn(initial-player)
