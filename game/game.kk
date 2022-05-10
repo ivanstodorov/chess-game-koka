@@ -47,7 +47,7 @@ fun input-draw-offer(current-player : player, invalid-input-warning : string = d
       println("\n" ++ invalid-input-warning ++ "\n")
       input-draw-offer(current-player, invalid-input-warning)
 
-fun input-pawn-promotion(current-location : location, current-player : player, invalid-input-warning : string = default-invalid-input-warning) : <div, console, read-input-pawn-promotion> pawn-promotion
+fun input-pawn-promotion(current-location : location, current-player : player, invalid-input-warning : string = default-invalid-input-warning) : <div, console, read-input-pawn-promotion> pawn-promotion-type
   fun parse-location(x : location) : maybe<string>
     fun parse-row(row : int) : maybe<string>
       match row
@@ -92,7 +92,7 @@ fun input-pawn-promotion(current-location : location, current-player : player, i
       println("\n" ++ invalid-input-warning ++ "\n")
       input-pawn-promotion(current-location, current-player, invalid-input-warning)
 
-fun perform-turn(current-action : action) : board-state ()
+fun perform-turn(current-action : turn-action) : board-state ()
   fun change-board(new-figure : figure, removal-condition : (figure) -> bool) : board-state ()
     set-board(Board(Cons(new-figure, get-board().figures.remove(removal-condition))))
 
@@ -203,7 +203,7 @@ fun is-in-check(current-board : board, current-player : player) : bool
     Just(Figure(_, _, current-location)) -> is-threatened(current-location, current-board, current-player.opponent)
     _                                    -> False
 
-fun validate-input-turn(current-action : action, current-board : board, can-offer-draw : bool = True) : bool
+fun validate-input-turn(current-action : turn-action, current-board : board, can-offer-draw : bool = True) : bool
   match current-action
     Move(x, to-location)                            ->
       match valid-moves(x, current-board).find(fn(current) current == to-location)
@@ -216,7 +216,7 @@ fun validate-input-turn(current-action : action, current-board : board, can-offe
     DrawOffer                                       -> can-offer-draw
     _                                               -> True
 
-fun input-turn(current-board : board, current-player : player, can-offer-draw : bool = True, invalid-input-warning : string = default-invalid-input-warning) : <div, console, read-input-turn> action
+fun input-turn(current-board : board, current-player : player, can-offer-draw : bool = True, invalid-input-warning : string = default-invalid-input-warning) : <div, console, read-input-turn> turn-action
   print(current-player.show ++ "'s turn: ")
 
   match read-input-turn(current-player, current-board)

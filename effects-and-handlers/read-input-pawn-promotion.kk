@@ -4,7 +4,7 @@ import game/turn-action/pawn-promotion-type/pawn-promotion-type
 
 import std/os/readline
 
-pub effect fun read-input-pawn-promotion() : maybe<pawn-promotion>
+pub effect fun read-input-pawn-promotion() : maybe<pawn-promotion-type>
 
 pub fun handle-read-input-pawn-promotion(action : () -> <console, exn, read-input-pawn-promotion | e> a) : <console, exn | e> a
   with fun read-input-pawn-promotion()

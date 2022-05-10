@@ -5,7 +5,7 @@ import game/board/location/location
 import game/figure/figure
 import game/player/player
 
-pub type action
+pub type turn-action
   Move(selected-figure : figure, to : location)
   Castling(castling-type : castling-type, current-player : player)
   DrawOffer

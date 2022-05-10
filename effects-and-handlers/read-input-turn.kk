@@ -10,7 +10,7 @@ import std/os/readline
 val synonyms-for-draw = ["remis", "draw", "tie"]
 val synonyms-for-surrender = ["good game", "gg", "forfait", "ff"]
 
-pub effect fun read-input-turn(current-player : player, current-board : board) : maybe<action>
+pub effect fun read-input-turn(current-player : player, current-board : board) : maybe<turn-action>
 
 pub fun handle-read-input-turn(action : () -> <console, exn, read-input-turn | e> a) : <console, exn | e> a
   fun parse-row(row : char) : maybe<int>
