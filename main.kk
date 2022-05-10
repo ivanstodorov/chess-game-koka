@@ -1,6 +1,7 @@
 module chess-game
 
 import game/game
+import main-menu/main-menu-action/main-menu-action
 import main-menu/main-menu
 
 pub fun main() : <div, console, exn> ()
