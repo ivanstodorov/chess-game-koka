@@ -1,5 +1,10 @@
 module game/game
 
+pub import game/figure/figure-type/figure-type
+pub import game/board/location/location
+pub import game/figure/figure
+pub import game/player/player
+pub import effects-and-handlers/show-board
 pub import game/board/board
 
 import std/os/readline
@@ -371,8 +376,8 @@ fun remove-en-passant(figures : list<figure>, current-player : player) : list<fi
     Cons(head, tail)        -> Cons(head, remove-en-passant(tail, current-player))
     _                       -> Nil
 
-pub fun turn(current-player : player, can-offer-draw : bool = True) : <div, console, board-state, board-history, read-input-turn, read-input-pawn-promotion, read-input-draw-offer> maybe<player>
-  println(get-board().show)
+pub fun turn(current-player : player, can-offer-draw : bool = True) : <div, console, board-state, board-history, read-input-turn, read-input-pawn-promotion, read-input-draw-offer, show-board> maybe<player>
+  println(show-board(get-board()))
   println("")
   
   val current-action = input-turn(get-board(), current-player, can-offer-draw)
@@ -407,7 +412,7 @@ pub fun turn(current-player : player, can-offer-draw : bool = True) : <div, cons
          !validate-castling(Kingside, get-board(), current-opponent) &&
          !validate-castling(Queenside, get-board(), current-opponent)
       then
-        println(get-board().show)
+        println(show-board(get-board()))
         println("")
 
         return if is-in-check(get-board(), current-opponent) then Just(current-player) else Nothing
@@ -430,7 +435,7 @@ pub fun turn(current-player : player, can-offer-draw : bool = True) : <div, cons
 
       if get-history().length > 50 || is-cons(get-history().map-peek(count-occurences).filter(fn(current) current >= 3))
       then
-        println(get-board().show)
+        println(show-board(get-board()))
         println("")
 
         return Nothing
@@ -440,6 +445,7 @@ pub fun turn(current-player : player, can-offer-draw : bool = True) : <div, cons
 pub fun game(initial-player : player) : <div, console, exn> maybe<player>
   with handle-board-state(Board())
   with handle-board-history(Game-state(initial-player, get-board(), False, False, False, False))
+  with handle-show-board
   with handle-read-input-turn
   with handle-read-input-pawn-promotion
   with handle-read-input-draw-offer

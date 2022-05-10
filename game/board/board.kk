@@ -1,12 +1,12 @@
 module game/board/board
 
-pub import game/figure/figure
-pub import game/figure/figure-type/figure-type
-pub import game/board/location/location
-pub import game/player/player
+import game/board/location/location
+import game/figure/figure
+import game/figure/figure-type/figure-type
+import game/player/player
 
-val board-rows = 8
-val board-columns = 8
+pub val board-rows = 8
+pub val board-columns = 8
 
 type direction
   North
@@ -53,91 +53,6 @@ pub fun find-figure(current-board : board, target-location : location, current-p
       _                                        -> Nothing
 
   helper(current-board.figures)
-
-pub fun show(x : board) : string
-  fun show-row(row-index : int) : string
-    fun show-location(column-index : int) : string
-      match find-figure(x, (column-index, row-index))
-        Just(y) -> y.show
-        _       -> " "
-
-    var result := " " ++ (row-index + 1).show ++ " ||"
-
-    var current-column := 0
-    repeat(board-columns)
-      result := result ++ " " ++ show-location(current-column) ++ " "
-      current-column := current-column + 1
-      if current-column < board-columns then result := result ++ "|"
-
-    result := result ++ "|| " ++ (row-index + 1).show ++ " "
-    result
-
-  var result := "   || A | B | C | D | E | F | G | H ||   \n"
-  result := result ++ "===++===+===+===+===+===+===+===+===++===\n"
-
-  var current-row := board-rows - 1
-  repeat(board-rows)
-    result := result ++ show-row(current-row) ++ "\n"
-    current-row := current-row - 1
-    if current-row >= 0 then result := result ++ "---++---+---+---+---+---+---+---+---++---\n"
-
-  result := result ++ "===++===+===+===+===+===+===+===+===++---\n"
-  result := result ++ "   || A | B | C | D | E | F | G | H ||   "
-  result
-
-fun advance-pawn-one-rank(current-location : location, current-player : player) : location
-  match current-player
-    White -> (current-location.fst, current-location.snd + 1)
-    _     -> (current-location.fst, current-location.snd - 1)
-
-pub fun advance-pawn-two-ranks(current-location : location, current-player : player) : location
-  match current-player
-    White -> (current-location.fst, current-location.snd + 2)
-    _     -> (current-location.fst, current-location.snd - 2)
-
-pub fun pawn-takes-right(current-location : location, current-player : player) : location
-  match current-player
-    White -> (current-location.fst + 1, current-location.snd + 1)
-    _     -> (current-location.fst - 1, current-location.snd - 1)
-
-pub fun pawn-takes-left(current-location : location, current-player : player) : location
-  match current-player
-    White -> (current-location.fst - 1, current-location.snd + 1)
-    _     -> (current-location.fst + 1, current-location.snd - 1)
-
-pub fun right-en-passant-target(current-location : location, current-player : player) : location
-  match current-player
-    White -> (current-location.fst + 1, current-location.snd)
-    _     -> (current-location.fst - 1, current-location.snd)
-
-pub fun left-en-passant-target(current-location : location, current-player : player) : location
-  match current-player
-    White -> (current-location.fst - 1, current-location.snd)
-    _     -> (current-location.fst + 1, current-location.snd)
-
-pub fun check-for-pawn-promotion(current-board : board, current-player : player) : maybe<location>
-  current-board
-    .figures
-    .filter-map(fn(current) if current.figure-type == Pawn() && current.figure-player == current-player then Just(current.figure-location) else Nothing)
-    .find(fn(current) match current-player {
-      White -> current.snd == board-rows - 1
-      _     -> current.snd == 0})
-
-pub fun can-pawn-take-right(current-location : location, current-board : board, current-player : player) : bool
-  is-just(find-figure(current-board, pawn-takes-right(current-location, current-player), Just(current-player.opponent)))
-
-pub fun can-pawn-take-left(current-location : location, current-board : board, current-player : player) : bool
-  is-just(find-figure(current-board, pawn-takes-left(current-location, current-player), Just(current-player.opponent)))
-
-pub fun can-pawn-en-passant-right(current-location : location, current-board : board, current-player : player) : bool
-  match find-figure(current-board, right-en-passant-target(current-location, current-player), Just(current-player.opponent))
-    Just(Figure(Pawn(_, True), _, _)) -> True
-    _                                 -> False
-
-pub fun can-pawn-en-passant-left(current-location : location, current-board : board, current-player : player) : bool  
-  match find-figure(current-board, left-en-passant-target(current-location, current-player), Just(current-player.opponent))
-    Just(Figure(Pawn(_, True), _, _)) -> True
-    _                                 -> False
 
 pub fun valid-moves(current-figure : figure, current-board : board) : list<location>
   fun validate-location(x : location) : bool
@@ -220,3 +135,57 @@ pub fun is-threatened(current-location : location, current-board : board, curren
       _                                                                                           -> False
 
   is-threatened-by-figure(current-board.figures.filter(fn(current) current.figure-player == current-player))
+
+pub fun check-for-pawn-promotion(current-board : board, current-player : player) : maybe<location>
+  current-board
+    .figures
+    .filter-map(fn(current) if current.figure-type == Pawn() && current.figure-player == current-player then Just(current.figure-location) else Nothing)
+    .find(fn(current) match current-player {
+      White -> current.snd == board-rows - 1
+      _     -> current.snd == 0})
+
+fun advance-pawn-one-rank(current-location : location, current-player : player) : location
+  match current-player
+    White -> (current-location.fst, current-location.snd + 1)
+    _     -> (current-location.fst, current-location.snd - 1)
+
+pub fun advance-pawn-two-ranks(current-location : location, current-player : player) : location
+  match current-player
+    White -> (current-location.fst, current-location.snd + 2)
+    _     -> (current-location.fst, current-location.snd - 2)
+
+pub fun can-pawn-take-right(current-location : location, current-board : board, current-player : player) : bool
+  is-just(find-figure(current-board, pawn-takes-right(current-location, current-player), Just(current-player.opponent)))
+
+pub fun pawn-takes-right(current-location : location, current-player : player) : location
+  match current-player
+    White -> (current-location.fst + 1, current-location.snd + 1)
+    _     -> (current-location.fst - 1, current-location.snd - 1)
+
+pub fun can-pawn-take-left(current-location : location, current-board : board, current-player : player) : bool
+  is-just(find-figure(current-board, pawn-takes-left(current-location, current-player), Just(current-player.opponent)))
+
+pub fun pawn-takes-left(current-location : location, current-player : player) : location
+  match current-player
+    White -> (current-location.fst - 1, current-location.snd + 1)
+    _     -> (current-location.fst + 1, current-location.snd - 1)
+
+pub fun right-en-passant-target(current-location : location, current-player : player) : location
+  match current-player
+    White -> (current-location.fst + 1, current-location.snd)
+    _     -> (current-location.fst - 1, current-location.snd)
+
+pub fun can-pawn-en-passant-right(current-location : location, current-board : board, current-player : player) : bool
+  match find-figure(current-board, right-en-passant-target(current-location, current-player), Just(current-player.opponent))
+    Just(Figure(Pawn(_, True), _, _)) -> True
+    _                                 -> False
+
+pub fun left-en-passant-target(current-location : location, current-player : player) : location
+  match current-player
+    White -> (current-location.fst - 1, current-location.snd)
+    _     -> (current-location.fst + 1, current-location.snd)
+
+pub fun can-pawn-en-passant-left(current-location : location, current-board : board, current-player : player) : bool  
+  match find-figure(current-board, left-en-passant-target(current-location, current-player), Just(current-player.opponent))
+    Just(Figure(Pawn(_, True), _, _)) -> True
+    _                                 -> False
