@@ -87,11 +87,20 @@ pub fun valid-moves(current-figure : figure, current-board : board) : list<locat
 
   match current-figure
     Figure(Pawn(has-moved, _), current-player, current-location) ->
-      var result : list<location> := [advance-pawn-one-rank(current-location, current-player)]
+      var result : list<location> := Nil
 
-      if !has-moved
-      then result := Cons(advance-pawn-two-ranks(current-location, current-player), result)
-      
+      val location-advance-pawn-one-rank : location = advance-pawn(current-location, current-player)
+
+      if is-nothing(find-figure(current-board, location-advance-pawn-one-rank))
+      then
+        result := Cons(location-advance-pawn-one-rank, result)
+
+        val location-advance-pawn-two-ranks : location = advance-pawn(location-advance-pawn-one-rank, current-player)
+
+        if !has-moved &&
+           is-nothing(find-figure(current-board, location-advance-pawn-two-ranks))
+        then result := Cons(location-advance-pawn-two-ranks, result)
+
       if can-pawn-take-right(current-location, current-board, current-player) ||
           can-pawn-en-passant-right(current-location, current-board, current-player)
       then result := Cons(pawn-takes-right(current-location, current-player), result)
@@ -151,15 +160,10 @@ pub fun check-for-pawn-promotion(current-board : board, current-player : player)
         _     -> current.snd == 0
     )
 
-fun advance-pawn-one-rank(current-location : location, current-player : player) : location
+pub fun advance-pawn(current-location : location, current-player : player) : location
   match current-player
     White -> (current-location.fst, current-location.snd + 1)
     _     -> (current-location.fst, current-location.snd - 1)
-
-pub fun advance-pawn-two-ranks(current-location : location, current-player : player) : location
-  match current-player
-    White -> (current-location.fst, current-location.snd + 2)
-    _     -> (current-location.fst, current-location.snd - 2)
 
 pub fun can-pawn-take-right(current-location : location, current-board : board, current-player : player) : bool
   is-just(find-figure(current-board, pawn-takes-right(current-location, current-player), Just(current-player.opponent)))

@@ -104,7 +104,7 @@ fun perform-turn(current-action : turn-action) : board-state ()
 
       match temp
         Pawn()              ->
-          if to-location == advance-pawn-two-ranks(current-location, current-player)
+          if to-location == advance-pawn(advance-pawn(current-location, current-player), current-player)
           then return change-board(Figure(Pawn(True, True), current-player, to-location), removal-condition)
 
           if to-location == pawn-takes-right(current-location, current-player) &&
