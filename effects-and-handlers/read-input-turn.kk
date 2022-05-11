@@ -1,6 +1,7 @@
 module effects-and-handlers/read-input-turn
 
 import game/board/board
+import game/figure/figure
 import game/player/player
 import game/turn-action/castling-type/castling-type
 import game/turn-action/turn-action
