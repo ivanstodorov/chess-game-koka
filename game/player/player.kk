@@ -16,9 +16,9 @@ pub fun (!=)(x : player, y : player) : bool
 pub fun show(x : player) : string
   match x
     White -> "White player"
-    Black -> "Black player"
+    _     -> "Black player"
 
 pub fun opponent(x : player) : player
   match x
     White -> Black
-    Black -> White
+    _     -> White

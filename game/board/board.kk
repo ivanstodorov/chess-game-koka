@@ -1,12 +1,12 @@
 module game/board/board
 
-import game/board/location/location
+import location/location
 import game/figure/figure
 import game/figure/figure-type/figure-type
 import game/player/player
 
-pub val board-rows = 8
-pub val board-columns = 8
+pub val board-rows : int = 8
+pub val board-columns : int = 8
 
 type direction
   North
@@ -31,11 +31,12 @@ pub struct board
 pub fun (==)(x : board, y : board) : bool
   fun helper(xs : list<figure>, ys : list<figure>) : bool
     match xs
-      Cons(head, tail)         ->
+      Cons(head, tail) ->
         match find-figure(Board(ys), head.figure-location, Just(head.figure-player))
-          Just(z) | z === head -> helper(tail, ys.remove(fn(current) current === z))
-          _                    -> False
-      _                        -> is-nil(ys)
+          Just(z)
+            | z === head -> helper(tail, ys.remove(fn(current : figure) current === z))
+          _              -> False
+      _                -> is-nil(ys)
 
   helper(x.figures, y.figures)
 
@@ -59,10 +60,10 @@ pub fun valid-moves(current-figure : figure, current-board : board) : list<locat
     0 <= x.fst && x.fst < board-columns && 0 <= x.snd && x.snd < board-rows && is-nothing(find-figure(current-board, x, Just(current-figure.figure-player)))
 
   fun move(x : location, move-direction : direction) : list<location>
-    var result := Nil
+    var result : list<location> := Nil
 
     for-while(1, board-rows - 1) fn(i)
-      val current = match move-direction
+      val current : location = match move-direction
         North     -> (x.fst, x.snd + i)
         NorthEast -> (x.fst + i, x.snd + i)
         East      -> (x.fst + i, x.snd)
@@ -86,7 +87,7 @@ pub fun valid-moves(current-figure : figure, current-board : board) : list<locat
 
   match current-figure
     Figure(Pawn(has-moved, _), current-player, current-location) ->
-      var result := [advance-pawn-one-rank(current-location, current-player)]
+      var result : list<location> := [advance-pawn-one-rank(current-location, current-player)]
 
       if !has-moved
       then result := Cons(advance-pawn-two-ranks(current-location, current-player), result)
@@ -130,19 +131,25 @@ pub fun is-threatened(current-location : location, current-board : board, curren
   fun is-threatened-by-figure(current-figures : list<figure>) : bool
     match current-figures
       Cons(head, tail)
-        | is-just(valid-moves(head, current-board).find(fn(current) current == current-location)) -> True
-        | _                                                                                       -> is-threatened-by-figure(tail)
-      _                                                                                           -> False
+        | is-just(valid-moves(head, current-board).find(fn(current : location) current == current-location)) -> True
+        | _                                                                                                  -> is-threatened-by-figure(tail)
+      _                                                                                                      -> False
 
-  is-threatened-by-figure(current-board.figures.filter(fn(current) current.figure-player == current-player))
+  is-threatened-by-figure(current-board.figures.filter(fn(current : figure) current.figure-player == current-player))
 
 pub fun check-for-pawn-promotion(current-board : board, current-player : player) : maybe<location>
   current-board
     .figures
-    .filter-map(fn(current) if current.figure-type == Pawn() && current.figure-player == current-player then Just(current.figure-location) else Nothing)
-    .find(fn(current) match current-player {
-      White -> current.snd == board-rows - 1
-      _     -> current.snd == 0})
+    .filter-map(fn(current : figure) : maybe<location>
+      if current.figure-type == Pawn() && current.figure-player == current-player
+      then Just(current.figure-location)
+      else Nothing
+    )
+    .find(fn(current : location) : bool
+      match current-player
+        White -> current.snd == board-rows - 1
+        _     -> current.snd == 0
+    )
 
 fun advance-pawn-one-rank(current-location : location, current-player : player) : location
   match current-player

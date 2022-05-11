@@ -1,8 +1,8 @@
 module game/figure/figure
 
 import figure-type/figure-type
-import game/player/player
 import game/board/location/location
+import game/player/player
 
 pub struct figure
   figure-type     : figure-type

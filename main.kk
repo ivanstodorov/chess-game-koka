@@ -14,8 +14,8 @@ import game/player/player
 import main-menu/main-menu
 import main-menu/main-menu-action/main-menu-action
 
-pub fun main() : <div, console, exn> ()
-  fun start(initial-player : player) : <div, console, board-state, board-history, read-input-turn, read-input-pawn-promotion, read-input-draw-offer, show-board, read-input-main-menu> ()
+pub fun main() : <console, div, exn> ()
+  fun start(initial-player : player) : <board-history, board-state, console, div, read-input-draw-offer, read-input-main-menu, read-input-pawn-promotion, read-input-turn, show-board> ()
     match main-menu()
       NewGameAction -> 
         println("")
@@ -26,12 +26,12 @@ pub fun main() : <div, console, exn> ()
 
         println("")
         start(initial-player)
-      QuitAction    -> ()
+      _             -> ()
 
   println("Chess game")
   println("")
 
-  val initial-player = White
+  val initial-player : player = White
 
   with handle-board-state(Board())
   with handle-board-history(Game-state(initial-player, get-board(), False, False, False, False))

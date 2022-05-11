@@ -8,11 +8,11 @@ pub effect board-history
   fun clear-history() : ()
 
 pub fun handle-board-history(initial-entry : game-state, action : () -> <board-history | e> a) : e a
-  var history := [initial-entry]
+  var history : list<game-state> := [initial-entry]
 
   with handler
     fun get-history() history
-    fun add-to-history(new-entry) history := Cons(new-entry, history)
+    fun add-to-history(new-entry : game-state) history := Cons(new-entry, history)
     fun clear-history() history := Nil
   
   action()

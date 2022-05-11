@@ -12,5 +12,5 @@ pub fun pawn-promotion-to-figure-type(current-pawn-promotion : pawn-promotion-ty
   match current-pawn-promotion 
     PromoteToKnight -> Knight
     PromoteToBishop -> Bishop
-    PromoteToRook -> Rook(True)
-    PromoteToQueen -> Queen
+    PromoteToRook   -> Rook(True)
+    _               -> Queen

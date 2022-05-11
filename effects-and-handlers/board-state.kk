@@ -7,10 +7,10 @@ pub effect board-state
   fun set-board(new-board : board) : ()
 
 pub fun handle-board-state(initial-state : board, action : () -> <board-state | e> a) : e a
-  var current-board-state := initial-state
+  var current-board-state : board := initial-state
 
   with handler
     fun get-board() current-board-state
-    fun set-board(new-board) current-board-state := new-board
+    fun set-board(new-board : board) current-board-state := new-board
 
   action()

@@ -4,10 +4,10 @@ import game/board/board
 import game/player/player
 
 pub struct game-state
-  current-player : player
-  current-board : board
-  white-can-kingside-castle : bool
-  black-can-kingside-castle : bool
+  current-player             : player
+  current-board              : board
+  white-can-kingside-castle  : bool
+  black-can-kingside-castle  : bool
   white-can-queenside-castle : bool
   black-can-queenside-castle : bool
 

@@ -2,13 +2,13 @@ module effects-and-handlers/read-input-turn
 
 import game/board/board
 import game/player/player
-import game/turn-action/turn-action
 import game/turn-action/castling-type/castling-type
+import game/turn-action/turn-action
 
 import std/os/readline
 
-val synonyms-for-draw = ["remis", "draw", "tie"]
-val synonyms-for-surrender = ["good game", "gg", "forfait", "ff"]
+val synonyms-for-draw : list<string> = ["remis", "draw", "tie"]
+val synonyms-for-surrender : list<string> = ["good game", "gg", "forfait", "ff"]
 
 pub effect fun read-input-turn(current-player : player, current-board : board) : maybe<turn-action>
 
@@ -37,17 +37,17 @@ pub fun handle-read-input-turn(action : () -> <console, exn, read-input-turn | e
       'h' -> Just(7)
       _   -> Nothing
 
-  with fun read-input-turn(current-player, current-board)
-    val temp = readline()
+  with fun read-input-turn(current-player : player, current-board : board)
+    val temp : string = readline()
 
     if is-empty(temp) then return Nothing
 
-    val input = temp.to-lower
+    val input : string = temp.to-lower
 
     if input == "0-0" || input == "O-O" || input == "o-o" then return Just(Castling(Kingside, current-player))
     if input == "0-0-0" || input == "O-O-O" || input == "o-o-o" then return Just(Castling(Queenside, current-player))
-    if is-just(synonyms-for-draw.find(fn(current) current == input)) then return Just(DrawOffer)
-    if is-just(synonyms-for-surrender.find(fn(current) current == input)) then return Just(Surrender)
+    if is-just(synonyms-for-draw.find(fn(current : string) current == input)) then return Just(DrawOffer)
+    if is-just(synonyms-for-surrender.find(fn(current : string) current == input)) then return Just(Surrender)
 
     match list(input)
       Cons(m, Cons(n, Cons(o, Cons(p, Nil)))) ->
@@ -55,7 +55,7 @@ pub fun handle-read-input-turn(action : () -> <console, exn, read-input-turn | e
           ((Just(q), Just(r)), (Just(s), Just(t))) -> 
             match find-figure(current-board, (q, r), Just(current-player))
               Just(x) -> Just(Move(x, (s, t)))
-              Nothing -> Nothing
+              _       -> Nothing
           _                                        -> Nothing
       _                                       -> Nothing
 
