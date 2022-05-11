@@ -1,0 +1,6 @@
+# Koka files
+.koka
+
+# Executable files
+*.exe
+
