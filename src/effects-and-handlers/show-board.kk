@@ -33,7 +33,7 @@ pub fun handle-show-board(action : () -> <show-board | e> a) : e a
       current-row := current-row - 1
       if current-row >= 0 then result := result ++ "---++---+---+---+---+---+---+---+---++---\n"
 
-    result := result ++ "===++===+===+===+===+===+===+===+===++---\n"
+    result := result ++ "===++===+===+===+===+===+===+===+===++===\n"
     result := result ++ "   || A | B | C | D | E | F | G | H ||   "
     result
 
