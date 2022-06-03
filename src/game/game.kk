@@ -283,7 +283,7 @@ fun turn(current-player : player, can-offer-draw : bool = True) : <board-history
             | _                          -> count-occurences(current-game-state, tail)
           _                              -> 1
 
-      if get-history().length > 50 || is-cons(get-history().map-peek(count-occurences).filter(fn(current : int) current >= 3))
+      if get-history().length > 100 || is-cons(get-history().map-peek(count-occurences).filter(fn(current : int) current >= 3))
       then
         println(show-board(get-board()))
         println("")
