@@ -1,14 +1,13 @@
 module effects-and-handlers/read-input-pawn-promotion
 
+import effects-and-handlers/user-input
 import game/turn-action/pawn-promotion-type/pawn-promotion-type
-
-import std/os/readline
 
 pub effect fun read-input-pawn-promotion() : maybe<pawn-promotion-type>
 
-pub fun handle-read-input-pawn-promotion(action : () -> <console, exn, read-input-pawn-promotion | e> a) : <console, exn | e> a
+pub fun handle-read-input-pawn-promotion(action : () -> <read-input-pawn-promotion, user-input | e> a) : <user-input | e> a
   with fun read-input-pawn-promotion()
-    val temp : string = readline()
+    val temp : string = user-input()
 
     if is-empty(temp) then return Nothing
 

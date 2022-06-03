@@ -16,8 +16,6 @@ import turn-action/castling-type/castling-type
 import turn-action/pawn-promotion-type/pawn-promotion-type
 import turn-action/turn-action
 
-import std/os/readline
-
 val default-invalid-input-warning : string = "Invalid input!"
 
 fun remove-en-passant(figures : list<figure>, current-player : player) : list<figure>

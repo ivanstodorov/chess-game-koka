@@ -1,19 +1,18 @@
 module effects-and-handlers/read-input-turn
 
+import effects-and-handlers/user-input
 import game/board/board
 import game/figure/figure
 import game/player/player
 import game/turn-action/castling-type/castling-type
 import game/turn-action/turn-action
 
-import std/os/readline
-
 val synonyms-for-draw : list<string> = ["remis", "draw", "tie"]
 val synonyms-for-surrender : list<string> = ["good game", "gg", "forfait", "ff"]
 
 pub effect fun read-input-turn(current-player : player, current-board : board) : maybe<turn-action>
 
-pub fun handle-read-input-turn(action : () -> <console, exn, read-input-turn | e> a) : <console, exn | e> a
+pub fun handle-read-input-turn(action : () -> <read-input-turn, user-input | e> a) : <user-input | e> a
   fun parse-row(row : char) : maybe<int>
     match row
       '1' -> Just(0)
@@ -39,7 +38,7 @@ pub fun handle-read-input-turn(action : () -> <console, exn, read-input-turn | e
       _   -> Nothing
 
   with fun read-input-turn(current-player : player, current-board : board)
-    val temp : string = readline()
+    val temp : string = user-input()
 
     if is-empty(temp) then return Nothing
 

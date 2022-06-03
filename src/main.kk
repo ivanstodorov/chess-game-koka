@@ -7,6 +7,7 @@ import effects-and-handlers/read-input-main-menu
 import effects-and-handlers/read-input-pawn-promotion
 import effects-and-handlers/read-input-turn
 import effects-and-handlers/show-board
+import effects-and-handlers/user-input
 import game/board/board
 import game/game
 import game/game-state/game-state
@@ -14,8 +15,8 @@ import game/player/player
 import main-menu/main-menu
 import main-menu/main-menu-action/main-menu-action
 
-pub fun main() : <console, div, exn> ()
-  fun start(initial-player : player) : <console, div, exn> ()
+pub fun run() : <console, div, exn, user-input> ()
+  fun start(initial-player : player) : <console, div, exn, user-input> ()
     with handle-read-input-main-menu
     match main-menu()
       NewGameAction -> 
@@ -39,3 +40,7 @@ pub fun main() : <console, div, exn> ()
   println("")
 
   start(White)
+
+pub fun main() : <console, div, exn> ()
+  with read-input
+  run()

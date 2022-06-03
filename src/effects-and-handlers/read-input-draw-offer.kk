@@ -1,15 +1,15 @@
 module effects-and-handlers/read-input-draw-offer
 
-import std/os/readline
+import effects-and-handlers/user-input
 
 val synonyms-for-accept : list<string> = ["accept", "yes", "y"]
 val synonyms-for-reject : list<string> = ["reject", "no", "n"]
 
 pub effect fun read-input-draw-offer() : maybe<bool>
 
-pub fun handle-read-input-draw-offer(action : () -> <console, exn, read-input-draw-offer | e> a) : <console, exn | e> a
+pub fun handle-read-input-draw-offer(action : () -> <read-input-draw-offer, user-input | e> a) : <user-input | e> a
   with fun read-input-draw-offer()
-    val temp : string = readline()
+    val temp : string = user-input()
 
     if is-empty(temp) then return Nothing
 
