@@ -4,6 +4,7 @@ import board/board
 import board/location/location
 import effects-and-handlers/board-history
 import effects-and-handlers/board-state
+import effects-and-handlers/execution-method
 import effects-and-handlers/read-input-draw-offer
 import effects-and-handlers/read-input-pawn-promotion
 import effects-and-handlers/read-input-turn
@@ -35,17 +36,17 @@ fun has-valid-moves(current-board : board, current-player : player) : bool
 
   has-valid-moves-by-figure(current-board.figures.filter(fn(current : figure) current.figure-player == current-player))
 
-fun input-draw-offer(current-player : player, invalid-input-warning : string = default-invalid-input-warning) : <console, div, read-input-draw-offer> bool
-  println(current-player.show ++ " offered a draw.")
-  print(current-player.opponent.show ++ "'s response: ")
+fun input-draw-offer(current-player : player, invalid-input-warning : string = default-invalid-input-warning) : <div, execution-method, read-input-draw-offer> bool
+  custom-println(current-player.show ++ " offered a draw.")
+  custom-print(current-player.opponent.show ++ "'s response: ")
 
   match read-input-draw-offer()
     Just(x) -> x
     _       ->
-      println("\n" ++ invalid-input-warning ++ "\n")
+      custom-println("\n" ++ invalid-input-warning ++ "\n")
       input-draw-offer(current-player, invalid-input-warning)
 
-fun input-pawn-promotion(current-location : location, current-player : player, invalid-input-warning : string = default-invalid-input-warning) : <console, div, read-input-pawn-promotion> pawn-promotion-type
+fun input-pawn-promotion(current-location : location, current-player : player, invalid-input-warning : string = default-invalid-input-warning) : <div, execution-method, read-input-pawn-promotion> pawn-promotion-type
   fun parse-location(x : location) : maybe<string>
     fun parse-row(row : int) : maybe<string>
       match row
@@ -76,10 +77,10 @@ fun input-pawn-promotion(current-location : location, current-player : player, i
       _                  -> Nothing
 
   match parse-location(current-location)
-    Just(x) -> println("Pawn promotion at square " ++ x ++ ":")
-    _       -> println("Pawn promotion:")
+    Just(x) -> custom-println("Pawn promotion at square " ++ x ++ ":")
+    _       -> custom-println("Pawn promotion:")
 
-  print("Should the pawn be replaced with a knight (" ++ Figure(Knight, current-player, current-location).show ++
+  custom-print("Should the pawn be replaced with a knight (" ++ Figure(Knight, current-player, current-location).show ++
           "), bishop (" ++ Figure(Bishop, current-player, current-location).show ++
           "), rook (" ++ Figure(Rook(True), current-player, current-location).show ++
           ") or queen (" ++ Figure(Queen, current-player, current-location).show ++
@@ -88,7 +89,7 @@ fun input-pawn-promotion(current-location : location, current-player : player, i
   match read-input-pawn-promotion()
     Just(x) -> x
     _       ->
-      println("\n" ++ invalid-input-warning ++ "\n")
+      custom-println("\n" ++ invalid-input-warning ++ "\n")
       input-pawn-promotion(current-location, current-player, invalid-input-warning)
 
 fun perform-turn(current-action : turn-action) : board-state ()
@@ -215,23 +216,23 @@ fun validate-input-turn(current-action : turn-action, current-board : board, can
     DrawOffer                                       -> can-offer-draw
     _                                               -> True
 
-fun input-turn(current-board : board, current-player : player, can-offer-draw : bool = True, invalid-input-warning : string = default-invalid-input-warning) : <console, div, read-input-turn> turn-action
-  print(current-player.show ++ "'s turn: ")
+fun input-turn(current-board : board, current-player : player, can-offer-draw : bool = True, invalid-input-warning : string = default-invalid-input-warning) : <div, execution-method, read-input-turn> turn-action
+  custom-print(current-player.show ++ "'s turn: ")
 
   match read-input-turn(current-player, current-board)
     Just(x)
       | validate-input-turn(x, current-board, can-offer-draw) -> x
     _                                                         ->
-      // println("\n" ++ current-board.show) // Prints the board after an invalid input.
-      println("\n" ++ invalid-input-warning ++ "\n")
+      // custom-println("\n" ++ current-board.show) // Prints the board after an invalid input.
+      custom-println("\n" ++ invalid-input-warning ++ "\n")
       input-turn(current-board, current-player, can-offer-draw, invalid-input-warning)
 
-fun turn(current-player : player, can-offer-draw : bool = True) : <board-history, board-state, console, div, read-input-draw-offer, read-input-pawn-promotion, read-input-turn, show-board> maybe<player>
-  println(show-board(get-board()))
-  println("")
+fun turn(current-player : player, can-offer-draw : bool = True) : <board-history, board-state, div, execution-method, read-input-draw-offer, read-input-pawn-promotion, read-input-turn, show-board> maybe<player>
+  custom-println(show-board(get-board()))
+  custom-println("")
   
   val current-action : turn-action = input-turn(get-board(), current-player, can-offer-draw)
-  println("")
+  custom-println("")
 
   match current-action
     Move(Figure(Pawn, _, _), _) -> clear-history()
@@ -246,14 +247,14 @@ fun turn(current-player : player, can-offer-draw : bool = True) : <board-history
     Surrender -> Just(current-opponent)
     DrawOffer -> 
       val response : bool = input-draw-offer(current-player)
-      println("")
+      custom-println("")
       
       if response then Nothing else turn(current-player, False)
     _         ->
       match check-for-pawn-promotion(get-board(), current-player)
         Just(current-location) ->
           val new-figure : figure = Figure(pawn-promotion-to-figure-type(input-pawn-promotion(current-location, current-player)), current-player, current-location)
-          println("")
+          custom-println("")
 
           set-board(Board(Cons(new-figure, get-board().figures.remove(fn(current : figure) current.figure-location == current-location))))
         _                      -> ()
@@ -262,8 +263,8 @@ fun turn(current-player : player, can-offer-draw : bool = True) : <board-history
          !validate-castling(Kingside, get-board(), current-opponent) &&
          !validate-castling(Queenside, get-board(), current-opponent)
       then
-        println(show-board(get-board()))
-        println("")
+        custom-println(show-board(get-board()))
+        custom-println("")
 
         return if is-in-check(get-board(), current-opponent) then Just(current-player) else Nothing
 
@@ -285,12 +286,12 @@ fun turn(current-player : player, can-offer-draw : bool = True) : <board-history
 
       if get-history().length > 100 || is-cons(get-history().map-peek(count-occurences).filter(fn(current : int) current >= 3))
       then
-        println(show-board(get-board()))
-        println("")
+        custom-println(show-board(get-board()))
+        custom-println("")
 
         return Nothing
 
       turn(current-opponent)
 
-pub fun game(initial-player : player) : <board-history, board-state, console, div, read-input-draw-offer, read-input-pawn-promotion, read-input-turn, show-board> maybe<player>
+pub fun game(initial-player : player) : <board-history, board-state, div, execution-method, read-input-draw-offer, read-input-pawn-promotion, read-input-turn, show-board> maybe<player>
   turn(initial-player)

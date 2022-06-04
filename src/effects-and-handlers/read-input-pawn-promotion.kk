@@ -1,11 +1,11 @@
 module effects-and-handlers/read-input-pawn-promotion
 
-import effects-and-handlers/user-input
+import effects-and-handlers/execution-method
 import game/turn-action/pawn-promotion-type/pawn-promotion-type
 
 pub effect fun read-input-pawn-promotion() : maybe<pawn-promotion-type>
 
-pub fun handle-read-input-pawn-promotion(action : () -> <read-input-pawn-promotion, user-input | e> a) : <user-input | e> a
+pub fun handle-read-input-pawn-promotion(action : () -> <execution-method, read-input-pawn-promotion | e> a) : <execution-method | e> a
   with fun read-input-pawn-promotion()
     val temp : string = user-input()
 

@@ -1,6 +1,6 @@
 module effects-and-handlers/read-input-turn
 
-import effects-and-handlers/user-input
+import effects-and-handlers/execution-method
 import game/board/board
 import game/figure/figure
 import game/player/player
@@ -12,7 +12,7 @@ val synonyms-for-surrender : list<string> = ["good game", "gg", "forfait", "ff"]
 
 pub effect fun read-input-turn(current-player : player, current-board : board) : maybe<turn-action>
 
-pub fun handle-read-input-turn(action : () -> <read-input-turn, user-input | e> a) : <user-input | e> a
+pub fun handle-read-input-turn(action : () -> <execution-method, read-input-turn | e> a) : <execution-method | e> a
   fun parse-row(row : char) : maybe<int>
     match row
       '1' -> Just(0)

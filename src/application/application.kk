@@ -2,12 +2,12 @@ module application/application
 
 import effects-and-handlers/board-history
 import effects-and-handlers/board-state
+import effects-and-handlers/execution-method
 import effects-and-handlers/read-input-draw-offer
 import effects-and-handlers/read-input-main-menu
 import effects-and-handlers/read-input-pawn-promotion
 import effects-and-handlers/read-input-turn
 import effects-and-handlers/show-board
-import effects-and-handlers/user-input
 import game/board/board
 import game/game
 import game/game-state/game-state
@@ -15,12 +15,12 @@ import game/player/player
 import main-menu/main-menu
 import main-menu/main-menu-action/main-menu-action
 
-pub fun run() : <console, div, exn, user-input> ()
-  fun start(initial-player : player) : <console, div, exn, user-input> ()
+pub fun run() : <div, execution-method, exn> ()
+  fun start(initial-player : player) : <div, execution-method, exn> ()
     with handle-read-input-main-menu
     match main-menu()
       NewGameAction -> 
-        println("")
+        custom-println("")
 
         with handle-board-state(Board())
         with handle-board-history(Game-state(initial-player, get-board(), False, False, False, False))
@@ -29,14 +29,14 @@ pub fun run() : <console, div, exn, user-input> ()
         with handle-read-input-pawn-promotion
         with handle-read-input-draw-offer
         match game(initial-player)
-          Just(x) -> println(x.show ++ " wins!")
-          _       -> println("Draw!")
+          Just(x) -> custom-println(x.show ++ " wins!")
+          _       -> custom-println("Draw!")
 
-        println("")
+        custom-println("")
         start(initial-player)
       _             -> ()
 
-  println("Chess game")
-  println("")
+  custom-println("Chess game")
+  custom-println("")
 
   start(White)

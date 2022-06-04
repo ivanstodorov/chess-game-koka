@@ -1,8 +1,8 @@
 module main
 
 import application/application
-import effects-and-handlers/user-input
+import effects-and-handlers/execution-method
 
 pub fun main() : <console, div, exn> ()
-  with read-input
+  with normal-game
   run()

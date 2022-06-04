@@ -1,13 +1,13 @@
 module effects-and-handlers/read-input-draw-offer
 
-import effects-and-handlers/user-input
+import effects-and-handlers/execution-method
 
 val synonyms-for-accept : list<string> = ["accept", "yes", "y"]
 val synonyms-for-reject : list<string> = ["reject", "no", "n"]
 
 pub effect fun read-input-draw-offer() : maybe<bool>
 
-pub fun handle-read-input-draw-offer(action : () -> <read-input-draw-offer, user-input | e> a) : <user-input | e> a
+pub fun handle-read-input-draw-offer(action : () -> <execution-method, read-input-draw-offer | e> a) : <execution-method | e> a
   with fun read-input-draw-offer()
     val temp : string = user-input()
 

@@ -1,11 +1,11 @@
 module effects-and-handlers/read-input-main-menu
 
-import effects-and-handlers/user-input
+import effects-and-handlers/execution-method
 import main-menu/main-menu-action/main-menu-action
 
 pub effect fun read-input-main-menu() : maybe<main-menu-action>
 
-pub fun handle-read-input-main-menu(action : () -> <read-input-main-menu, user-input | e> a) : <user-input | e> a
+pub fun handle-read-input-main-menu(action : () -> <execution-method, read-input-main-menu | e> a) : <execution-method | e> a
   with fun read-input-main-menu()
     val input : string = user-input()
 

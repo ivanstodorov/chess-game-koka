@@ -1,5 +1,6 @@
 module main-menu/main-menu
 
+import effects-and-handlers/execution-method
 import effects-and-handlers/read-input-main-menu
 import main-menu-action/main-menu-action
 
@@ -11,18 +12,18 @@ fun show-main-menu() : string
   result := result ++ "2. Quit"
   result
 
-fun input-main-menu(invalid-input-warning : string = default-invalid-input-warning) : <console, div, read-input-main-menu> main-menu-action
-  print("Input: ")
+fun input-main-menu(invalid-input-warning : string = default-invalid-input-warning) : <div, execution-method, read-input-main-menu> main-menu-action
+  custom-print("Input: ")
 
   match read-input-main-menu()
     Just(x) -> x
     _       ->
-      // println("\n" ++ show-main-menu()) // Prints the main menu after an invalid input.
-      println("\n" ++ invalid-input-warning ++ "\n")
+      // custom-println("\n" ++ show-main-menu()) // Prints the main menu after an invalid input.
+      custom-println("\n" ++ invalid-input-warning ++ "\n")
       input-main-menu(invalid-input-warning)
 
-pub fun main-menu() : <console, div, read-input-main-menu> main-menu-action
-  println(show-main-menu())
-  println("")
+pub fun main-menu() : <div, execution-method, read-input-main-menu> main-menu-action
+  custom-println(show-main-menu())
+  custom-println("")
 
   input-main-menu()
