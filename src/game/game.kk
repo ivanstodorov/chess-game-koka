@@ -283,7 +283,7 @@ fun turn(current-board : ref<h, board>, current-player : player, current-history
             | _                          -> count-occurences(current-game-state, tail)
           _                              -> 1
 
-      if (!current-history).length > 10 || is-cons((!current-history).map-peek(count-occurences).filter(fn(current : int) current >= 3))
+      if (!current-history).length > 100 || is-cons((!current-history).map-peek(count-occurences).filter(fn(current : int) current >= 3))
       then
         custom-println(show-board(!current-board))
         custom-println("")
