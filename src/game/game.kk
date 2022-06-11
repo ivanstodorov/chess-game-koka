@@ -3,7 +3,6 @@ module game/game
 import board/board
 import board/location/location
 import effects-and-handlers/board-history
-import effects-and-handlers/board-state
 import effects-and-handlers/execution-method
 import effects-and-handlers/read-input-draw-offer
 import effects-and-handlers/read-input-pawn-promotion
@@ -92,9 +91,9 @@ fun input-pawn-promotion(current-location : location, current-player : player, i
       custom-println("\n" ++ invalid-input-warning ++ "\n")
       input-pawn-promotion(current-location, current-player, invalid-input-warning)
 
-fun perform-turn(current-action : turn-action) : board-state ()
-  fun change-board(new-figure : figure, removal-condition : (figure) -> bool) : board-state ()
-    set-board(Board(Cons(new-figure, get-board().figures.remove(removal-condition))))
+fun perform-turn(current-board : ref<h, board>, current-action : turn-action) : <read<h>, write<h>> ()
+  fun change-board(board : ref<h, board>, new-figure : figure, removal-condition : (figure) -> bool) : <read<h>, write<h>> ()
+    board := Board(Cons(new-figure, (!board).figures.remove(removal-condition)))
 
   match current-action
     Move(Figure(temp, current-player, current-location), to-location) ->
@@ -104,36 +103,36 @@ fun perform-turn(current-action : turn-action) : board-state ()
       match temp
         Pawn()              ->
           if to-location == advance-pawn(advance-pawn(current-location, current-player), current-player)
-          then return change-board(Figure(Pawn(True, True), current-player, to-location), removal-condition)
+          then return change-board(current-board, Figure(Pawn(True, True), current-player, to-location), removal-condition)
 
           if to-location == pawn-takes-right(current-location, current-player) &&
-            can-pawn-en-passant-right(current-location, get-board(), current-player)
-          then return change-board(Figure(Pawn(True, False), current-player, to-location)) fn(current : figure) : bool
+            can-pawn-en-passant-right(current-location, !current-board, current-player)
+          then return change-board(current-board, Figure(Pawn(True, False), current-player, to-location)) fn(current : figure) : bool
             removal-condition(current) || current.figure-location == right-en-passant-target(current-location, current-player)
 
           if to-location == pawn-takes-left(current-location, current-player) &&
-            can-pawn-en-passant-left(current-location, get-board(), current-player)
-          then return change-board(Figure(Pawn(True, False), current-player, to-location)) fn(current : figure) : bool
+            can-pawn-en-passant-left(current-location, !current-board, current-player)
+          then return change-board(current-board, Figure(Pawn(True, False), current-player, to-location)) fn(current : figure) : bool
             removal-condition(current) || current.figure-location == left-en-passant-target(current-location, current-player)
 
-          change-board(Figure(Pawn(True, False), current-player, to-location), removal-condition)
+          change-board(current-board, Figure(Pawn(True, False), current-player, to-location), removal-condition)
         Rook()              ->
-          change-board(Figure(Rook(True), current-player, to-location), removal-condition)
+          change-board(current-board, Figure(Rook(True), current-player, to-location), removal-condition)
         King()              ->
-          change-board(Figure(King(True), current-player, to-location), removal-condition)
+          change-board(current-board, Figure(King(True), current-player, to-location), removal-condition)
         current-figure-type ->
-          change-board(Figure(current-figure-type, current-player, to-location), removal-condition)
+          change-board(current-board, Figure(current-figure-type, current-player, to-location), removal-condition)
     Castling(current-castling-type, current-player)                   ->
       val king-start-location : location = get-king-start-location-for-castling(current-castling-type, current-player)
       val king-destination : location = get-king-destination-for-castling(current-castling-type, current-player)
 
-      change-board(Figure(King(True), current-player, king-destination)) fn(current : figure) : bool
+      change-board(current-board, Figure(King(True), current-player, king-destination)) fn(current : figure) : bool
         current.figure-location == king-start-location || current.figure-location == king-destination
 
       val rook-start-location : location = get-rook-start-location-for-castling(current-castling-type, current-player)
       val rook-destination : location = get-rook-destination-for-castling(current-castling-type, current-player)
 
-      change-board(Figure(Rook(True), current-player, rook-destination)) fn(current : figure) : bool
+      change-board(current-board, Figure(Rook(True), current-player, rook-destination)) fn(current : figure) : bool
         current.figure-location == rook-start-location || current.figure-location == rook-destination
     _                                                                 -> ()
 
@@ -208,9 +207,9 @@ fun validate-input-turn(current-action : turn-action, current-board : board, can
     Move(x, to-location)                            ->
       match valid-moves(x, current-board).find(fn(current : location) current == to-location)
         Just(_) ->
-          with handle-board-state(current-board)
-          perform-turn(current-action)
-          !is-in-check(get-board(), x.figure-player)
+          val test-board = ref(current-board)
+          perform-turn(test-board, current-action)
+          !is-in-check(!test-board, x.figure-player)
         _       -> False
     Castling(current-castling-type, current-player) -> validate-castling(current-castling-type, current-board, current-player)
     DrawOffer                                       -> can-offer-draw
@@ -227,19 +226,19 @@ fun input-turn(current-board : board, current-player : player, can-offer-draw : 
       custom-println("\n" ++ invalid-input-warning ++ "\n")
       input-turn(current-board, current-player, can-offer-draw, invalid-input-warning)
 
-fun turn(current-player : player, can-offer-draw : bool = True) : <board-history, board-state, div, execution-method, read-input-draw-offer, read-input-pawn-promotion, read-input-turn, show-board> maybe<player>
-  custom-println(show-board(get-board()))
+fun turn(current-board : ref<h, board>, current-player : player, can-offer-draw : bool = True) : <board-history, div, execution-method, read<h>, read-input-draw-offer, read-input-pawn-promotion, read-input-turn, show-board, write<h>> maybe<player>
+  custom-println(show-board(!current-board))
   custom-println("")
   
-  val current-action : turn-action = input-turn(get-board(), current-player, can-offer-draw)
+  val current-action : turn-action = input-turn(!current-board, current-player, can-offer-draw)
   custom-println("")
 
   match current-action
     Move(Figure(Pawn, _, _), _) -> clear-history()
-    Move(_, to-location)        -> if is-just(find-figure(get-board(), to-location, Just(current-player.opponent))) then clear-history()
+    Move(_, to-location)        -> if is-just(find-figure(!current-board, to-location, Just(current-player.opponent))) then clear-history()
     _                           -> ()
 
-  perform-turn(current-action)
+  perform-turn(current-board, current-action)
 
   val current-opponent : player = current-player.opponent
 
@@ -249,33 +248,33 @@ fun turn(current-player : player, can-offer-draw : bool = True) : <board-history
       val response : bool = input-draw-offer(current-player)
       custom-println("")
       
-      if response then Nothing else turn(current-player, False)
+      if response then Nothing else turn(current-board, current-player, False)
     _         ->
-      match check-for-pawn-promotion(get-board(), current-player)
+      match check-for-pawn-promotion(!current-board, current-player)
         Just(current-location) ->
           val new-figure : figure = Figure(pawn-promotion-to-figure-type(input-pawn-promotion(current-location, current-player)), current-player, current-location)
           custom-println("")
 
-          set-board(Board(Cons(new-figure, get-board().figures.remove(fn(current : figure) current.figure-location == current-location))))
+          current-board := Board(Cons(new-figure, (!current-board).figures.remove(fn(current : figure) current.figure-location == current-location)))
         _                      -> ()
 
-      if !has-valid-moves(get-board(), current-opponent) &&
-         !validate-castling(Kingside, get-board(), current-opponent) &&
-         !validate-castling(Queenside, get-board(), current-opponent)
+      if !has-valid-moves(!current-board, current-opponent) &&
+         !validate-castling(Kingside, !current-board, current-opponent) &&
+         !validate-castling(Queenside, !current-board, current-opponent)
       then
-        custom-println(show-board(get-board()))
+        custom-println(show-board(!current-board))
         custom-println("")
 
-        return if is-in-check(get-board(), current-opponent) then Just(current-player) else Nothing
+        return if is-in-check(!current-board, current-opponent) then Just(current-player) else Nothing
 
-      set-board(Board(get-board().figures.remove-en-passant(current-opponent)))
+      current-board := Board((!current-board).figures.remove-en-passant(current-opponent))
 
       add-to-history(Game-state(current-opponent,
-                                get-board(),
-                                validate-castling(Kingside, get-board(), White),
-                                validate-castling(Kingside, get-board(), Black),
-                                validate-castling(Queenside, get-board(), White),
-                                validate-castling(Queenside, get-board(), Black)))
+                                !current-board,
+                                validate-castling(Kingside, !current-board, White),
+                                validate-castling(Kingside, !current-board, Black),
+                                validate-castling(Queenside, !current-board, White),
+                                validate-castling(Queenside, !current-board, Black)))
 
       fun count-occurences(current-game-state : game-state, current-history : list<game-state>) : int
         match current-history
@@ -286,12 +285,12 @@ fun turn(current-player : player, can-offer-draw : bool = True) : <board-history
 
       if get-history().length > 100 || is-cons(get-history().map-peek(count-occurences).filter(fn(current : int) current >= 3))
       then
-        custom-println(show-board(get-board()))
+        custom-println(show-board(!current-board))
         custom-println("")
 
         return Nothing
 
-      turn(current-opponent)
+      turn(current-board, current-opponent)
 
-pub fun game(initial-player : player) : <board-history, board-state, div, execution-method, read-input-draw-offer, read-input-pawn-promotion, read-input-turn, show-board> maybe<player>
-  turn(initial-player)
+pub fun game(initial-player : player) : <board-history, div, execution-method, read-input-draw-offer, read-input-pawn-promotion, read-input-turn, show-board> maybe<player>
+  turn(ref(Board()), initial-player)
