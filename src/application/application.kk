@@ -1,6 +1,5 @@
 module application/application
 
-import effects-and-handlers/board-history
 import effects-and-handlers/execution-method
 import effects-and-handlers/read-input-draw-offer
 import effects-and-handlers/read-input-main-menu
@@ -21,7 +20,6 @@ pub fun run() : <div, execution-method, exn> ()
       NewGameAction -> 
         custom-println("")
 
-        with handle-board-history(Game-state(initial-player, Board(), False, False, False, False))
         with handle-show-board
         with handle-read-input-turn
         with handle-read-input-pawn-promotion

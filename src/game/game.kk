@@ -2,7 +2,6 @@ module game/game
 
 import board/board
 import board/location/location
-import effects-and-handlers/board-history
 import effects-and-handlers/execution-method
 import effects-and-handlers/read-input-draw-offer
 import effects-and-handlers/read-input-pawn-promotion
@@ -226,7 +225,7 @@ fun input-turn(current-board : board, current-player : player, can-offer-draw : 
       custom-println("\n" ++ invalid-input-warning ++ "\n")
       input-turn(current-board, current-player, can-offer-draw, invalid-input-warning)
 
-fun turn(current-board : ref<h, board>, current-player : player, can-offer-draw : bool = True) : <board-history, div, execution-method, read<h>, read-input-draw-offer, read-input-pawn-promotion, read-input-turn, show-board, write<h>> maybe<player>
+fun turn(current-board : ref<h, board>, current-player : player, current-history : ref<h, list<game-state>>, can-offer-draw : bool = True) : <div, execution-method, read<h>, read-input-draw-offer, read-input-pawn-promotion, read-input-turn, show-board, write<h>> maybe<player>
   custom-println(show-board(!current-board))
   custom-println("")
   
@@ -234,8 +233,8 @@ fun turn(current-board : ref<h, board>, current-player : player, can-offer-draw 
   custom-println("")
 
   match current-action
-    Move(Figure(Pawn, _, _), _) -> clear-history()
-    Move(_, to-location)        -> if is-just(find-figure(!current-board, to-location, Just(current-player.opponent))) then clear-history()
+    Move(Figure(Pawn, _, _), _) -> current-history := []
+    Move(_, to-location)        -> if is-just(find-figure(!current-board, to-location, Just(current-player.opponent))) then current-history := []
     _                           -> ()
 
   perform-turn(current-board, current-action)
@@ -248,7 +247,7 @@ fun turn(current-board : ref<h, board>, current-player : player, can-offer-draw 
       val response : bool = input-draw-offer(current-player)
       custom-println("")
       
-      if response then Nothing else turn(current-board, current-player, False)
+      if response then Nothing else turn(current-board, current-player, current-history, False)
     _         ->
       match check-for-pawn-promotion(!current-board, current-player)
         Just(current-location) ->
@@ -269,28 +268,29 @@ fun turn(current-board : ref<h, board>, current-player : player, can-offer-draw 
 
       current-board := Board((!current-board).figures.remove-en-passant(current-opponent))
 
-      add-to-history(Game-state(current-opponent,
-                                !current-board,
-                                validate-castling(Kingside, !current-board, White),
-                                validate-castling(Kingside, !current-board, Black),
-                                validate-castling(Queenside, !current-board, White),
-                                validate-castling(Queenside, !current-board, Black)))
+      current-history := Cons(Game-state(current-opponent,
+                                         !current-board,
+                                         validate-castling(Kingside, !current-board, White),
+                                         validate-castling(Kingside, !current-board, Black),
+                                         validate-castling(Queenside, !current-board, White),
+                                         validate-castling(Queenside, !current-board, Black)),
+                              !current-history)
 
-      fun count-occurences(current-game-state : game-state, current-history : list<game-state>) : int
-        match current-history
+      fun count-occurences(current-game-state : game-state, history : list<game-state>) : int
+        match history
           Cons(head, tail)
             | head == current-game-state -> 1 + count-occurences(current-game-state, tail)
             | _                          -> count-occurences(current-game-state, tail)
           _                              -> 1
 
-      if get-history().length > 100 || is-cons(get-history().map-peek(count-occurences).filter(fn(current : int) current >= 3))
+      if (!current-history).length > 10 || is-cons((!current-history).map-peek(count-occurences).filter(fn(current : int) current >= 3))
       then
         custom-println(show-board(!current-board))
         custom-println("")
 
         return Nothing
 
-      turn(current-board, current-opponent)
+      turn(current-board, current-opponent, current-history)
 
-pub fun game(initial-player : player) : <board-history, div, execution-method, read-input-draw-offer, read-input-pawn-promotion, read-input-turn, show-board> maybe<player>
-  turn(ref(Board()), initial-player)
+pub fun game(initial-player : player) : <div, execution-method, read-input-draw-offer, read-input-pawn-promotion, read-input-turn, show-board> maybe<player>
+  turn(ref(Board()), initial-player, ref([Game-state(initial-player, Board(), False, False, False, False)]))
