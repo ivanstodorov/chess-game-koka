@@ -17,7 +17,7 @@ pub fun run() : <div, execution-method, exn> ()
   fun start(initial-player : player) : <div, execution-method, exn> ()
     with handle-read-input-main-menu
     match main-menu()
-      NewGameAction -> 
+      NewGameAction ->
         custom-println("")
 
         with handle-show-board

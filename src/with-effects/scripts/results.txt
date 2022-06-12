@@ -1,25 +1,25 @@
 Repetitions: 10
 Compilation time:
-	Real: 3:02.84
-	User: 139.88
-	System: 9.86
+	Real: 3:00.63
+	User: 137.87
+	System: 9.75
 
 Repetitions: 100
 Start time
-	Real: 0:02.47
-	User: 0.48
-	System: 0.13
+	Real: 0:02.48
+	User: 0.51
+	System: 0.10
 
 Repetitions: 100
 Shortest game time:
-	Real: 0:06.02
-	User: 3.30
-	System: 0.24
-	Maximum resident set size (kbytes): 7132
+	Real: 0:05.92
+	User: 3.24
+	System: 0.17
+	Maximum resident set size (kbytes): 7144
 
 Repetitions: 100
 Longest game time:
-	Real: 0:22.06
-	User: 19.16
-	System: 0.37
-	Maximum resident set size (kbytes): 15356
+	Real: 0:21.45
+	User: 18.56
+	System: 0.32
+	Maximum resident set size (kbytes): 15348

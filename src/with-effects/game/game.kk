@@ -79,10 +79,10 @@ fun input-pawn-promotion(current-location : location, current-player : player, i
     _       -> custom-println("Pawn promotion:")
 
   custom-print("Should the pawn be replaced with a knight (" ++ Figure(Knight, current-player, current-location).show ++
-          "), bishop (" ++ Figure(Bishop, current-player, current-location).show ++
-          "), rook (" ++ Figure(Rook(True), current-player, current-location).show ++
-          ") or queen (" ++ Figure(Queen, current-player, current-location).show ++
-          "): ")
+               "), bishop (" ++ Figure(Bishop, current-player, current-location).show ++
+               "), rook (" ++ Figure(Rook(True), current-player, current-location).show ++
+               ") or queen (" ++ Figure(Queen, current-player, current-location).show ++
+               "): ")
 
   match read-input-pawn-promotion()
     Just(x) -> x
