@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 ## Compilation time
 
 x_axis = ["Real", "User", "System"]
-y_all_compilation = np.array([[134.17, 126.76, 6.50], [136.18, 128.62, 6.61], [135.17, 127.75, 6.47], [135.11, 127.57, 6.64]])
+y_all_compilation = np.array([[137.91, 130.60, 6.47]])
 
 repetitions = 10
 
@@ -23,7 +23,7 @@ for y_temp in y_all_compilation:
 ## Start time
 
 x_axis = ["Real", "User", "System"]
-y_all_start = np.array([[0.09, 0.06, 0.03], [0.10, 0.07, 0.03], [0.09, 0.07, 0.03], [0.09, 0.06, 0.03]])
+y_all_start = np.array([[0.09, 0.08, 0.02]])
 
 repetitions = 100
 
@@ -39,7 +39,7 @@ for y_temp in y_all_start:
 ## One player's turn (shortest game)
 
 x_axis = ["Real", "User", "System"]
-y_all_short = np.array([[0.17, 0.14, 0.04], [0.24, 0.19, 0.06], [0.23, 0.16, 0.08], [0.10, 0.08, 0.02]])
+y_all_short = np.array([[0.22, 0.18, 0.05]])
 
 repetitions = 100
 
@@ -55,7 +55,7 @@ for y_temp in y_all_short:
 ## One player's turn (longest game)
 
 x_axis = ["Real", "User", "System"]
-y_all_long = np.array([[0.25, 0.19, 0.07], [0.24, 0.19, 0.07], [0.25, 0.18, 0.08], [0.24, 0.18, 0.07]])
+y_all_long = np.array([[0.24, 0.16, 0.08]])
 
 repetitions = 100
 
@@ -95,7 +95,7 @@ for y_temp_short, y_temp_long in zip(y_all_short, y_all_long):
 ## Peak memory usage
 
 x_axis = ["Shortest game", "Longest game"]
-y_all_memory = np.array([[3392, 3400], [3396, 3344], [3384, 3304], [3336, 3432]])
+y_all_memory = np.array([[3428, 3300]])
 
 repetitions = 100
 
