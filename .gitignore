@@ -3,4 +3,7 @@
 
 # Executable files
 *.exe
-
+**/main
+**/no-game
+**/shortest-world-championship-game
+**/longest-world-championship-game

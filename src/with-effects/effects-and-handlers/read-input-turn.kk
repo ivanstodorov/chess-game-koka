@@ -8,7 +8,7 @@ import game/turn-action/castling-type/castling-type
 import game/turn-action/turn-action
 
 val synonyms-for-draw : list<string> = ["remis", "draw", "tie"]
-val synonyms-for-surrender : list<string> = ["good game", "gg", "forfait", "ff"]
+val synonyms-for-surrender : list<string> = ["surrender", "good game", "gg", "forfait", "ff"]
 
 pub effect fun read-input-turn(current-player : player, current-board : board) : maybe<turn-action>
 

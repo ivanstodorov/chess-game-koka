@@ -15,7 +15,7 @@ import std/os/readline
 val default-invalid-input-warning : string = "Invalid input!"
 
 val synonyms-for-draw : list<string> = ["remis", "draw", "tie"]
-val synonyms-for-surrender : list<string> = ["good game", "gg", "forfait", "ff"]
+val synonyms-for-surrender : list<string> = ["surrender", "good game", "gg", "forfait", "ff"]
 
 val synonyms-for-accept : list<string> = ["accept", "yes", "y"]
 val synonyms-for-reject : list<string> = ["reject", "no", "n"]

@@ -49,7 +49,7 @@ for y_temp in y_all_short:
     fig, ax = plt.subplots()
     bars = ax.bar(x_axis, y_axis)
     ax.bar_label(bars)
-    plt.title("Average time for executing a player's turn in the\nshortest decisive world championship game\n(100 simulations)")
+    plt.title("Average time for executing a player's turn in the\nshortest decisive, non-forfeited world championship game\n(100 simulations)")
     plt.ylabel(r"Time ($\mu$s)")
 
 ## One player's turn (longest game)

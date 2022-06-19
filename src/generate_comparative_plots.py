@@ -77,7 +77,7 @@ for temp_with_effects, temp_without_effects in zip(shortest_with_effects, shorte
     bars_without_effects = ax.bar(x_axis + bar_width / 2, y_without_effects, bar_width, label="Without effects")
     ax.bar_label(bars_with_effects)
     ax.bar_label(bars_without_effects)
-    plt.title("Average time for executing a player's turn in the\nshortest decisive world championship game\n(100 simulations)")
+    plt.title("Average time for executing a player's turn in the\nshortest decisive, non-forfeited world championship game\n(100 simulations)")
     ax.set_xticks(x_axis)
     ax.set_xticklabels(x_labels)
     plt.ylabel(r"Time ($\mu$s)")
